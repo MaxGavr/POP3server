@@ -4,6 +4,8 @@ import pop3.Server;
 import pop3.SessionState;
 import pop3.command.POP3Response;
 
+
+
 public abstract class CommandProcessor {
 	
 	public class CommandArgs {
@@ -17,14 +19,17 @@ public abstract class CommandProcessor {
 	}
 	
 	
-	private Server mServer;
-	private CommandArgs mArgs;
+	protected Server mServer;
+	protected CommandArgs mArgs;
+	protected POP3Response mResponse;
 	
 	
 	public CommandProcessor(Server server, CommandArgs args) {
 		mServer = server;
 		mArgs = args;
+		mResponse = new POP3Response();
 	}
+	
 	
 	public CommandArgs getCommandArgs() {
 		return mArgs;
@@ -32,5 +37,7 @@ public abstract class CommandProcessor {
 	
 	abstract public void process(String command);
 	
-	abstract public POP3Response getResponse();
+	public POP3Response getResponse() {
+		return mResponse;
+	}
 }

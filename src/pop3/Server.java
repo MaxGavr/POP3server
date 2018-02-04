@@ -84,6 +84,10 @@ public class Server {
 		mAcceptTimeout = timeout;
 	}
 	
+	public boolean hasUser(String user) {
+		return mUserMaildrop.get(user) != null;
+	}
+	
 	public String getUserPassword(String user) {
 		return mUserPassword.get(user);
 	}

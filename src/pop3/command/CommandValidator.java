@@ -11,6 +11,10 @@ public class CommandValidator {
 		return new String();
 	}
 	
+	public static String getCommandArgs(String command) {
+		return new String();
+	}
+	
 	public static POP3Response getInvalidResponse() {
 		return new POP3Response(false, "invalid command");
 	}

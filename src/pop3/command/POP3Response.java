@@ -1,8 +1,11 @@
 package pop3.command;
 
+
+
 public class POP3Response {
 	
-	private String mString;
+	private boolean mIsPositive;
+	private String mArgs;
 	
 	
 	public static String getPosPrefix() {
@@ -13,16 +16,37 @@ public class POP3Response {
 		return "-ERR";
 	}
 	
+	
+	public POP3Response() {
+		mIsPositive = false;
+		mArgs = new String();
+	}
+	
 	public POP3Response(boolean isPositive, String arg) {
-		if (isPositive)
-			mString += getPosPrefix();
-		else
-			mString += getErrPrefix();
-		
-		mString += arg;
+		mIsPositive = isPositive;
+		mArgs = arg;
+	}
+	
+	
+	public void setPositive(boolean isPositive) {
+		mIsPositive = isPositive;
+	}
+	
+	public void setArgs(String args) {
+		mArgs = args;
+	}
+	
+	public void setResponse(boolean isPositive, String args) {
+		mIsPositive = isPositive;
+		mArgs = args;
 	}
 	
 	public String getString() {
-		return mString;
+		String str = new String();
+		
+		str += mIsPositive ? getPosPrefix() : getErrPrefix();
+		str += " " + mArgs;
+		
+		return str;
 	}
 }
