@@ -7,11 +7,13 @@ import java.io.InputStreamReader;
 import java.net.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 
 import pop3.ClientHandler;
+import pop3.Maildrop;
+
+
 
 public class Server {
 	
@@ -20,12 +22,14 @@ public class Server {
 	private int mAcceptTimeout = 1_000 * 1;
 	
 	private ServerSocket mServerSocket;
-	private HashMap<String, List<String>> mUserMaildrop;
+	private volatile HashMap<String, Maildrop> mUserMaildrop;
+	private volatile HashMap<String, String> mUserPassword;
 	
 	private ExecutorService executor;
 	
 	private BufferedReader mConsoleInput;
 		
+	
 	public void start(){
 		executor = Executors.newFixedThreadPool(TOTAL_CLIENTS);
 		
@@ -67,7 +71,7 @@ public class Server {
 				continue;
 			}
 			
-			ClientHandler client = new ClientHandler(clientSocket);
+			ClientHandler client = new ClientHandler(clientSocket, this);
 			executor.execute(client);
 		}
 	}
@@ -78,5 +82,13 @@ public class Server {
 
 	public void setTimeout(int timeout) {
 		mAcceptTimeout = timeout;
+	}
+	
+	public String getUserPassword(String user) {
+		return mUserPassword.get(user);
+	}
+	
+	public Maildrop getUserMaildrop(String user) {
+		return mUserMaildrop.get(user);
 	}
 }
