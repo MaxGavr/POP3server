@@ -8,7 +8,7 @@ import pop3.command.POP3Response;
 
 public abstract class CommandProcessor {
 	
-	public class CommandArgs {
+	static public class CommandArgs {
 		public String mUser;
 		public SessionState mState;
 		
@@ -24,18 +24,17 @@ public abstract class CommandProcessor {
 	protected POP3Response mResponse;
 	
 	
-	public CommandProcessor(Server server, CommandArgs args) {
+	public CommandProcessor(Server server) {
 		mServer = server;
-		mArgs = args;
 		mResponse = new POP3Response();
 	}
 	
 	
-	public CommandArgs getCommandArgs() {
+	public CommandArgs retrieveCommandArgs() {
 		return mArgs;
 	}
 	
-	abstract public void process(String command);
+	abstract public void process(String command, CommandArgs args);
 	
 	public POP3Response getResponse() {
 		return mResponse;

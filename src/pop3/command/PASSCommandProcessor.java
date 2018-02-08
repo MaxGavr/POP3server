@@ -7,12 +7,12 @@ import pop3.Maildrop;
 
 public class PASSCommandProcessor extends CommandProcessor {
 
-	public PASSCommandProcessor(Server server, CommandArgs args) {
-		super(server, args);
+	public PASSCommandProcessor(Server server) {
+		super(server);
 	}
 
 	@Override
-	public void process(String command) {
+	public void process(String command, CommandArgs args) {
 		if (mArgs.mState != SessionState.AUTHORIZATION) {
 			mResponse.setResponse(false, "PASS command can only be used in AUTHORIZATION state");
 			return;
@@ -23,8 +23,7 @@ public class PASSCommandProcessor extends CommandProcessor {
 			return;
 		}
 		
-		String password = CommandValidator.getCommandArgs(command);
-		
+		String password = String.join("", CommandParser.getCommandArgs(command));
 		String actualPassword = mServer.getUserPassword(mArgs.mUser);
 		
 		if (actualPassword == null || !actualPassword.equals(password)) {
@@ -38,6 +37,7 @@ public class PASSCommandProcessor extends CommandProcessor {
 			return;
 		}
 		
+		// success
 		userMaildrop.lock();
 		mArgs.mState = SessionState.TRANSACTION;
 		mResponse.setResponse(true, "maildrop for user " + mArgs.mUser + " successfully locked");
