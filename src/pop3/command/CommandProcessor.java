@@ -11,10 +11,12 @@ public abstract class CommandProcessor {
 	static public class CommandArgs {
 		public String mUser;
 		public SessionState mState;
+		public boolean mCloseConnection;
 		
-		public CommandArgs(String user, SessionState state) {
+		public CommandArgs(String user, SessionState state, boolean closeConnection) {
 			mUser = user;
 			mState = state;
+			mCloseConnection = closeConnection;
 		}
 	}
 	

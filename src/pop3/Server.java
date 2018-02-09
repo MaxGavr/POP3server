@@ -28,7 +28,11 @@ public class Server {
 	private ExecutorService executor;
 	
 	private BufferedReader mConsoleInput;
-		
+	
+	
+	public Server() {
+		loadUsers();
+	}
 	
 	public void start(){
 		executor = Executors.newFixedThreadPool(TOTAL_CLIENTS);
@@ -74,6 +78,18 @@ public class Server {
 			ClientHandler client = new ClientHandler(clientSocket, this);
 			executor.execute(client);
 		}
+	}
+	
+	private void loadUsers() {
+		mUserMaildrop = new HashMap<String, Maildrop>();
+		mUserMaildrop.put("max", new Maildrop("max.txt"));
+		mUserMaildrop.put("jack", new Maildrop("jack.txt"));
+		mUserMaildrop.put("lucy", new Maildrop("lucy.txt"));
+		
+		mUserPassword = new HashMap<String, String>();
+		mUserPassword.put("max", "pass_max");
+		mUserPassword.put("jack", "pass_jack");
+		mUserPassword.put("lucy", "pass_lucy");
 	}
 	
 	public int getTimeout() {

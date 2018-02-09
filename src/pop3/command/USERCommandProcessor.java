@@ -14,6 +14,7 @@ public class USERCommandProcessor extends CommandProcessor {
 	
 	@Override
 	public void process(String command, CommandArgs args) {
+		mArgs = args;
 		if (mArgs.mState != SessionState.AUTHORIZATION) {
 			mResponse.setResponse(false, "USER command can only be used in AUTHORIZATION state");
 			return;
@@ -24,6 +25,11 @@ public class USERCommandProcessor extends CommandProcessor {
 	
 		if (!mServer.hasUser(user)) {
 			mResponse.setResponse(false, "user " + mArgs.mUser + " is not registered");
+			return;
+		}
+		
+		if (mServer.getUserMaildrop(user).isLocked()) {
+			mResponse.setResponse(false, "user " + user + " already signed in");
 			return;
 		}
 		

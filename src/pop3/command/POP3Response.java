@@ -45,7 +45,7 @@ public class POP3Response {
 		String str = new String();
 		
 		str += mIsPositive ? getPosPrefix() : getErrPrefix();
-		str += " " + mArgs;
+		str += " " + mArgs + "\r\n";
 		
 		return str;
 	}

@@ -3,10 +3,10 @@ package pop3;
 import java.net.*;
 
 import java.util.HashMap;
-
-import java.io.DataInputStream;
+import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 import pop3.command.*;
 import pop3.command.CommandProcessor.CommandArgs;
@@ -18,10 +18,11 @@ public class ClientHandler implements Runnable {
 	private Socket mSocket;
 	
 	private DataOutputStream mSocketOutput;
-	private DataInputStream mSocketInput;
+	private BufferedReader mSocketInput;
 	
 	private String mUser;
 	private SessionState mState;
+	private boolean mCloseConnection = false;
 	private Server mServer;
 	
 	private HashMap<String, CommandProcessor> mProcessors;
@@ -32,11 +33,12 @@ public class ClientHandler implements Runnable {
 		mServer = server;
 		
 		mSocketOutput = new DataOutputStream(mSocket.getOutputStream());
-		mSocketInput = new DataInputStream(mSocket.getInputStream());
+		mSocketInput = new BufferedReader(new InputStreamReader(mSocket.getInputStream()));
 		
 		mProcessors = new HashMap<String, CommandProcessor>();
 		mProcessors.put("USER", new USERCommandProcessor(mServer));
 		mProcessors.put("PASS", new PASSCommandProcessor(mServer));
+		mProcessors.put("QUIT", new QUITCommandProcessor(mServer));
 	}
 	
 	@Override
@@ -44,9 +46,11 @@ public class ClientHandler implements Runnable {
 		mState = SessionState.AUTHORIZATION;
 		sendGreeting();
 		
-		while (!mSocket.isClosed()) {
+		while (!mSocket.isClosed() && !mCloseConnection) {
 			receiveCommand();
 		}
+		
+		disconnect();
 	}
 	
 	private void sendGreeting() {
@@ -64,8 +68,12 @@ public class ClientHandler implements Runnable {
 	
 	private void receiveCommand() {
 		try {
-			// TODO: get rid of UTF
-			String command = mSocketInput.readUTF();
+			String command = mSocketInput.readLine();
+			if (command == null) {
+				return;
+			}
+			
+			System.out.println("Received command: " + command);
 			
 			if (!CommandParser.validate(command)) {
 				sendResponse(CommandParser.getInvalidResponse());
@@ -82,16 +90,28 @@ public class ClientHandler implements Runnable {
 		}
 	}
 	
+	private void disconnect() {
+		try {
+			mSocketOutput.close();
+			mSocketInput.close();
+			mSocket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	private CommandProcessor getCommandProcessor(String commandKeyword) {
 		return mProcessors.get(commandKeyword);
 	}
 	
 	private CommandArgs formCommandArgs() {
-		return new CommandProcessor.CommandArgs(mUser, mState);
+		// TODO: check references
+		return new CommandProcessor.CommandArgs(mUser, mState, mCloseConnection);
 	}
 	
 	private void applyCommandChanges(CommandProcessor.CommandArgs args) {
 		mState = args.mState;
 		mUser = args.mUser;
+		mCloseConnection = args.mCloseConnection;
 	}
 }

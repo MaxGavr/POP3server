@@ -14,7 +14,8 @@ public class CommandParser {
 	//private static String mKeywordRegex = "[\\p{Print}]{3,4}";
 	//private static String mArgumentRegex = "[\\p{Print}]{1,40}";
 	
-	private static Pattern mPOP3CommandPattern = Pattern.compile("^[\\p{Print}]{3,4}( [\\p{Print}]{1,40})*\\r\\n$");
+	// TODO: add \r\n
+	private static Pattern mPOP3CommandPattern = Pattern.compile("^[\\p{Print}]{3,4}( [\\p{Print}]{1,40})*$");
 	private static LinkedList<String> mKnownCommands = new LinkedList<String>();
 	static {
 		mKnownCommands.add("USER");
@@ -24,6 +25,10 @@ public class CommandParser {
 	
 	
 	public static boolean validate(String command) {
+		if (command == null) {
+			return false;
+		}
+		
 		Matcher commandMatcher = mPOP3CommandPattern.matcher(command);
 		if (!commandMatcher.matches()) {
 			return false;
@@ -36,7 +41,7 @@ public class CommandParser {
 	
 	public static String getCommandKeyword(String command) {
 		String argsAndKeyword[] = command.split(" ");
-		return argsAndKeyword[0];
+		return argsAndKeyword[0].toUpperCase();
 	}
 	
 	public static String[] getCommandArgs(String command) {
