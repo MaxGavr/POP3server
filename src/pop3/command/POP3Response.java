@@ -1,11 +1,14 @@
 package pop3.command;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 
 
 public class POP3Response {
 	
 	private boolean mIsPositive;
-	private String mArgs;
+	private ArrayList<String> mArgs;
 	
 	
 	public static String getPosPrefix() {
@@ -16,15 +19,25 @@ public class POP3Response {
 		return "-ERR";
 	}
 	
+	public static String getLineEnd() {
+		return "\r\n";
+	}
+	
 	
 	public POP3Response() {
 		mIsPositive = false;
-		mArgs = new String();
+		mArgs = new ArrayList<String>();
 	}
 	
 	public POP3Response(boolean isPositive, String arg) {
 		mIsPositive = isPositive;
-		mArgs = arg;
+		mArgs = new ArrayList<String>();
+		mArgs.add(arg);
+	}
+	
+	public POP3Response(boolean isPositive, String[] args) {
+		mIsPositive = isPositive;
+		setArgs(args);
 	}
 	
 	
@@ -32,20 +45,45 @@ public class POP3Response {
 		mIsPositive = isPositive;
 	}
 	
-	public void setArgs(String args) {
-		mArgs = args;
+	public void setArgs(String[] args) {
+		mArgs = new ArrayList<String>(Arrays.asList(args));
 	}
 	
-	public void setResponse(boolean isPositive, String args) {
+	public void addArg(String arg) {
+		mArgs.add(arg);
+	}
+	
+	public void clearArgs() {
+		mArgs.clear();
+	}
+	
+	public void setResponse(boolean isPositive, String arg) {
 		mIsPositive = isPositive;
-		mArgs = args;
+		mArgs.clear();
+		mArgs.add(arg);
+	}
+	
+	public void setResponse(boolean isPositive, String[] args) {
+		mIsPositive = isPositive;
+		setArgs(args);
 	}
 	
 	public String getString() {
-		String str = new String();
+		String str = new String(); 
 		
 		str += mIsPositive ? getPosPrefix() : getErrPrefix();
-		str += " " + mArgs + "\r\n";
+		
+		if (mArgs.size() > 1) {
+			str += getLineEnd();
+			
+			for (String arg : mArgs) {
+				str += arg + getLineEnd();
+			}
+			
+			str += "." + getLineEnd();
+		} else {
+			str += " " + mArgs + getLineEnd();
+		}
 		
 		return str;
 	}

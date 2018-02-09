@@ -24,7 +24,7 @@ public class USERCommandProcessor extends CommandProcessor {
 		String user = arguments[0];
 	
 		if (!mServer.hasUser(user)) {
-			mResponse.setResponse(false, "user " + mArgs.mUser + " is not registered");
+			mResponse.setResponse(false, "user " + user + " is not registered");
 			return;
 		}
 		

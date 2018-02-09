@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 import pop3.command.*;
 import pop3.command.CommandProcessor.CommandArgs;
@@ -39,7 +40,10 @@ public class ClientHandler implements Runnable {
 		mProcessors.put("USER", new USERCommandProcessor(mServer));
 		mProcessors.put("PASS", new PASSCommandProcessor(mServer));
 		mProcessors.put("QUIT", new QUITCommandProcessor(mServer));
+		mProcessors.put("STAT", new STATCommandProcessor(mServer));
+		mProcessors.put("LIST", new LISTCommandProcessor(mServer));
 	}
+	
 	
 	@Override
 	public void run() {
@@ -53,13 +57,15 @@ public class ClientHandler implements Runnable {
 		disconnect();
 	}
 	
+	
 	private void sendGreeting() {
 		sendResponse(new POP3Response(true, "POP3 server is ready"));
 	}
 	
 	private void sendResponse(POP3Response response) {
 		try {
-			mSocketOutput.writeChars(response.getString());
+			mSocketOutput.write(response.getString().getBytes(StandardCharsets.US_ASCII));
+			//mSocketOutput.writeChars(response.getString());
 			mSocketOutput.flush();
 		} catch (IOException e) {
 			e.printStackTrace();

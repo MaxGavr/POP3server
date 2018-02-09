@@ -21,6 +21,8 @@ public class CommandParser {
 		mKnownCommands.add("USER");
 		mKnownCommands.add("PASS");
 		mKnownCommands.add("QUIT");
+		mKnownCommands.add("STAT");
+		mKnownCommands.add("LIST");
 	}
 	
 	
@@ -46,8 +48,11 @@ public class CommandParser {
 	
 	public static String[] getCommandArgs(String command) {
 		String argsAndKeyword[] = command.split(" ");
-		
-		return Arrays.copyOfRange(argsAndKeyword, 1, argsAndKeyword.length);
+		if (argsAndKeyword.length == 1) {
+			return new String[0];
+		} else {
+			return Arrays.copyOfRange(argsAndKeyword, 1, argsAndKeyword.length);
+		}
 	}
 	
 	public static POP3Response getInvalidResponse() {
