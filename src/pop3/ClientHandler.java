@@ -42,6 +42,7 @@ public class ClientHandler implements Runnable {
 		mProcessors.put("QUIT", new QUITCommandProcessor(mServer));
 		mProcessors.put("STAT", new STATCommandProcessor(mServer));
 		mProcessors.put("LIST", new LISTCommandProcessor(mServer));
+		mProcessors.put("RETR", new RETRCommandProcessor(mServer));
 	}
 	
 	
@@ -65,8 +66,8 @@ public class ClientHandler implements Runnable {
 	private void sendResponse(POP3Response response) {
 		try {
 			mSocketOutput.write(response.getString().getBytes(StandardCharsets.US_ASCII));
-			//mSocketOutput.writeChars(response.getString());
 			mSocketOutput.flush();
+			System.out.println("Send response: " + response.getString());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

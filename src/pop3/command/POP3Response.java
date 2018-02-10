@@ -8,6 +8,7 @@ import java.util.Arrays;
 public class POP3Response {
 	
 	private boolean mIsPositive;
+	private boolean mIsMultiline;
 	private ArrayList<String> mArgs;
 	
 	
@@ -26,17 +27,20 @@ public class POP3Response {
 	
 	public POP3Response() {
 		mIsPositive = false;
+		mIsMultiline = false;
 		mArgs = new ArrayList<String>();
 	}
 	
 	public POP3Response(boolean isPositive, String arg) {
 		mIsPositive = isPositive;
+		mIsMultiline = false;
 		mArgs = new ArrayList<String>();
 		mArgs.add(arg);
 	}
 	
 	public POP3Response(boolean isPositive, String[] args) {
 		mIsPositive = isPositive;
+		mIsMultiline = true;
 		setArgs(args);
 	}
 	
@@ -45,22 +49,31 @@ public class POP3Response {
 		mIsPositive = isPositive;
 	}
 	
+	public void setMultiline(boolean isMultiline) {
+		mIsMultiline = true;
+	}
+	
 	public void setArgs(String[] args) {
+		mIsMultiline = true;
 		mArgs = new ArrayList<String>(Arrays.asList(args));
 	}
 	
 	public void addArg(String arg) {
 		mArgs.add(arg);
+		if (mArgs.size() > 1) {
+			mIsMultiline = true;
+		}
 	}
 	
 	public void clearArgs() {
+		mIsMultiline = false;
 		mArgs.clear();
 	}
 	
 	public void setResponse(boolean isPositive, String arg) {
 		mIsPositive = isPositive;
-		mArgs.clear();
-		mArgs.add(arg);
+		clearArgs();
+		addArg(arg);
 	}
 	
 	public void setResponse(boolean isPositive, String[] args) {
@@ -73,7 +86,7 @@ public class POP3Response {
 		
 		str += mIsPositive ? getPosPrefix() : getErrPrefix();
 		
-		if (mArgs.size() > 1) {
+		if (mIsMultiline) {
 			str += getLineEnd();
 			
 			for (String arg : mArgs) {
@@ -82,7 +95,7 @@ public class POP3Response {
 			
 			str += "." + getLineEnd();
 		} else {
-			str += " " + mArgs + getLineEnd();
+			str += " " + mArgs.get(0) + getLineEnd();
 		}
 		
 		return str;

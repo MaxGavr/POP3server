@@ -23,6 +23,7 @@ public class CommandParser {
 		mKnownCommands.add("QUIT");
 		mKnownCommands.add("STAT");
 		mKnownCommands.add("LIST");
+		mKnownCommands.add("RETR");
 	}
 	
 	
@@ -57,5 +58,9 @@ public class CommandParser {
 	
 	public static POP3Response getInvalidResponse() {
 		return new POP3Response(false, "invalid command");
+	}
+	
+	public static int getLineMaxLength() {
+		return 512;
 	}
 }
