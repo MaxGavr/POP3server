@@ -1,7 +1,7 @@
 package pop3;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import java.io.FileReader;
@@ -15,14 +15,14 @@ import java.nio.charset.StandardCharsets;
 
 public class Maildrop {
 	private ArrayList<String> mMessages;
-	private HashSet<Integer> mMarkedMessages;
+	private TreeSet<Integer> mMarkedMessages;
 	
 	private boolean mIsLocked;
 	
 	
 	public Maildrop() {
 		mMessages = new ArrayList<String>();
-		mMarkedMessages = new HashSet<Integer>();
+		mMarkedMessages = new TreeSet<Integer>();
 	}
 	
 	public Maildrop(String fileName) {
@@ -32,34 +32,36 @@ public class Maildrop {
 			mMessages = new ArrayList<String>();
 		}
 		
-		mMarkedMessages = new HashSet<Integer>();
+		mMarkedMessages = new TreeSet<Integer>();
 	}
 	
 	
 	public void markMessageToDelete(int msgIndex) {
 		if (isValidIndex(msgIndex)) {
-			mMarkedMessages.add(msgIndex - 1);
+			mMarkedMessages.add(msgIndex);
 		}
 	}
 	
 	public void unmarkMessageToDelete(int msgIndex) {
 		if (isValidIndex(msgIndex)) {
-			mMarkedMessages.remove(msgIndex - 1);
+			mMarkedMessages.remove(msgIndex);
 		}
 	}
 	
-	public void deleteMarkedMessages() {
-		for (Integer msgIndex : mMarkedMessages) {
-			mMessages.remove(msgIndex.intValue() - 1);
+	public boolean deleteMarkedMessages() {
+		for (Integer msgIndex : mMarkedMessages.descendingSet()) {
+			mMessages.remove(msgIndex - 1);
 		}
 		mMarkedMessages.clear();
+		
+		return true;
 	}
 	
 	public ArrayList<String> getMessages() {
 		return mMessages;
 	}
 	
-	public HashSet<Integer> getMarkedMessages() {
+	public TreeSet<Integer> getMarkedMessages() {
 		return mMarkedMessages;
 	}
 	
@@ -99,7 +101,7 @@ public class Maildrop {
 	}
 	
 	public boolean isMessageMarked(int msgIndex) {
-		return mMarkedMessages.contains(msgIndex -1 );
+		return mMarkedMessages.contains(msgIndex);
 	}
 	
 	public boolean isLocked() {

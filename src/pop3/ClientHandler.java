@@ -95,6 +95,11 @@ public class ClientHandler implements Runnable {
 	
 	private void disconnect() {
 		mServer.serverMessage("Disconnecting client " + getClientAddress());
+		
+		if (mState == SessionState.TRANSACTION) {
+			mServer.getUserMaildrop(mUser).unlock();
+		}
+		
 		try {
 			mSocketOutput.close();
 			mSocketInput.close();
