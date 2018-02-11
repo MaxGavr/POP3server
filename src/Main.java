@@ -16,6 +16,7 @@ public class Main {
 		server.registerCommand("RETR", new RETRCommandProcessor(server));
 		server.registerCommand("DELE", new DELECommandProcessor(server));
 		server.registerCommand("NOOP", new NOOPCommandProcessor(server));
+		server.registerCommand("RSET", new RSETCommandProcessor(server));
 		
 		server.start();
 	}

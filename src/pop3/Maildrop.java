@@ -15,14 +15,14 @@ import java.nio.charset.StandardCharsets;
 
 public class Maildrop {
 	private ArrayList<String> mMessages;
-	private HashSet<Integer> mDeletedMessages;
+	private HashSet<Integer> mMarkedMessages;
 	
 	private boolean mIsLocked;
 	
 	
 	public Maildrop() {
 		mMessages = new ArrayList<String>();
-		mDeletedMessages = new HashSet<Integer>();
+		mMarkedMessages = new HashSet<Integer>();
 	}
 	
 	public Maildrop(String fileName) {
@@ -32,31 +32,35 @@ public class Maildrop {
 			mMessages = new ArrayList<String>();
 		}
 		
-		mDeletedMessages = new HashSet<Integer>();
+		mMarkedMessages = new HashSet<Integer>();
 	}
 	
 	
 	public void markMessageToDelete(int msgIndex) {
 		if (isValidIndex(msgIndex)) {
-			mDeletedMessages.add(msgIndex - 1);
+			mMarkedMessages.add(msgIndex - 1);
 		}
 	}
 	
 	public void unmarkMessageToDelete(int msgIndex) {
 		if (isValidIndex(msgIndex)) {
-			mDeletedMessages.remove(msgIndex - 1);
+			mMarkedMessages.remove(msgIndex - 1);
 		}
 	}
 	
 	public void deleteMarkedMessages() {
-		for (Integer msgIndex : mDeletedMessages) {
+		for (Integer msgIndex : mMarkedMessages) {
 			mMessages.remove(msgIndex.intValue() - 1);
 		}
-		mDeletedMessages.clear();
+		mMarkedMessages.clear();
 	}
 	
 	public ArrayList<String> getMessages() {
 		return mMessages;
+	}
+	
+	public HashSet<Integer> getMarkedMessages() {
+		return mMarkedMessages;
 	}
 	
 	public String getMessage(int msgIndex) {
@@ -95,7 +99,7 @@ public class Maildrop {
 	}
 	
 	public boolean isMessageMarked(int msgIndex) {
-		return mDeletedMessages.contains(msgIndex -1 );
+		return mMarkedMessages.contains(msgIndex -1 );
 	}
 	
 	public boolean isLocked() {

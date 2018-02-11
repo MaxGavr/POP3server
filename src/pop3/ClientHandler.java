@@ -79,7 +79,7 @@ public class ClientHandler implements Runnable {
 			if (!CommandParser.validate(command)) {
 				sendResponse(CommandParser.getInvalidResponse());
 			} else if (!mServer.isCommandAvailable(CommandParser.getCommandKeyword(command))) {
-				sendResponse(new POP3Response(false, "command is not available"));
+				sendResponse(new POP3Response(false, "command is not implemented"));
 			} else {
 				CommandProcessor processor = getCommandProcessor(CommandParser.getCommandKeyword(command));
 				
