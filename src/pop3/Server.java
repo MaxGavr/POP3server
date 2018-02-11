@@ -1,17 +1,18 @@
 package pop3;
 
-import java.io.IOException;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
 import java.net.*;
 
 import java.util.HashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 
+import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
 import pop3.ClientHandler;
 import pop3.Maildrop;
+import pop3.command.CommandProcessor;
 
 
 
@@ -25,16 +26,20 @@ public class Server {
 	private volatile HashMap<String, Maildrop> mUserMaildrop;
 	private volatile HashMap<String, String> mUserPassword;
 	
+	volatile HashMap<String, CommandProcessor> mProcessors;
+	
 	private ExecutorService executor;
 	
 	private BufferedReader mConsoleInput;
 	
 	
 	public Server() {
+		mProcessors = new HashMap<String, CommandProcessor>();
 		loadUsers();
 	}
 	
 	public void start(){
+		serverMessage("Server started");
 		executor = Executors.newFixedThreadPool(TOTAL_CLIENTS);
 		
 		try {
@@ -44,9 +49,8 @@ public class Server {
 			mConsoleInput = new BufferedReader(new InputStreamReader(System.in));
 			
 			acceptNewClients();
-		}
-		catch (IOException e)
-		{
+
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
@@ -76,6 +80,7 @@ public class Server {
 			}
 			
 			ClientHandler client = new ClientHandler(clientSocket, this);
+			serverMessage("Accept client " + client.getClientAddress());
 			executor.execute(client);
 		}
 	}
@@ -92,6 +97,19 @@ public class Server {
 		mUserPassword.put("lucy", "pass_lucy");
 	}
 	
+	synchronized void serverMessage(String msg) {
+		System.out.println(msg);
+	}
+	
+	public boolean isCommandAvailable(String command) {
+		return mProcessors.containsKey(command);
+	}
+	
+	public void registerCommand(String command, CommandProcessor processor) {
+		mProcessors.put(command, processor);
+		serverMessage("Register command " + command);
+	}
+	
 	public int getTimeout() {
 		return mAcceptTimeout;
 	}
@@ -104,11 +122,11 @@ public class Server {
 		return mUserMaildrop.get(user) != null;
 	}
 	
-	public String getUserPassword(String user) {
+	public synchronized String getUserPassword(String user) {
 		return mUserPassword.get(user);
 	}
 	
-	public Maildrop getUserMaildrop(String user) {
+	public synchronized Maildrop getUserMaildrop(String user) {
 		return mUserMaildrop.get(user);
 	}
 }

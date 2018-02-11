@@ -10,10 +10,10 @@ public class NOOPCommandProcessor extends CommandProcessor {
 	}
 
 	@Override
-	public void process(String command, CommandArgs args) {
-		mArgs = args;
+	public void process(String command, ClientSessionState session) {
+		mSession = session;
 		
-		if (mArgs.mState != SessionState.TRANSACTION) {
+		if (mSession.mState != SessionState.TRANSACTION) {
 			mResponse.setResponse(false, "NOOP command can only be used in TRANSACTION state");
 			return;
 		}

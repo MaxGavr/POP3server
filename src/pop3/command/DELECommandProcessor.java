@@ -11,10 +11,10 @@ public class DELECommandProcessor extends CommandProcessor {
 	}
 
 	@Override
-	public void process(String command, CommandArgs args) {
-		mArgs = args;
+	public void process(String command, ClientSessionState session) {
+		mSession = session;
 		
-		if (mArgs.mState != SessionState.TRANSACTION) {
+		if (mSession.mState != SessionState.TRANSACTION) {
 			mResponse.setResponse(false, "DELE command can only be used in TRANSACTION state");
 			return;
 		}
@@ -27,7 +27,7 @@ public class DELECommandProcessor extends CommandProcessor {
 		
 		// TODO: catch NumberFormatException
 		int msgIndex = Integer.parseInt(String.join("", commandArgs));
-		Maildrop mail = mServer.getUserMaildrop(mArgs.mUser);
+		Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
 		
 		if (!mail.isValidIndex(msgIndex)) {
 			mResponse.setResponse(false, "no such message");

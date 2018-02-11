@@ -35,13 +35,7 @@ public class CommandParser {
 		}
 		
 		Matcher commandMatcher = mPOP3CommandPattern.matcher(command);
-		if (!commandMatcher.matches()) {
-			return false;
-		}
-		
-		String keyword = getCommandKeyword(command).toUpperCase();
-		
-		return commandMatcher.matches() && mKnownCommands.contains(keyword);
+		return commandMatcher.matches();
 	}
 	
 	public static String getCommandKeyword(String command) {

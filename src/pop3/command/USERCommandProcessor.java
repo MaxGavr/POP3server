@@ -13,9 +13,9 @@ public class USERCommandProcessor extends CommandProcessor {
 
 	
 	@Override
-	public void process(String command, CommandArgs args) {
-		mArgs = args;
-		if (mArgs.mState != SessionState.AUTHORIZATION) {
+	public void process(String command, ClientSessionState session) {
+		mSession = session;
+		if (mSession.mState != SessionState.AUTHORIZATION) {
 			mResponse.setResponse(false, "USER command can only be used in AUTHORIZATION state");
 			return;
 		}
@@ -34,7 +34,7 @@ public class USERCommandProcessor extends CommandProcessor {
 		}
 		
 		// success
-		mArgs.mUser = user;
+		mSession.mUser = user;
 		mResponse.setResponse(true, "user " + user + " found");
 	}
 }

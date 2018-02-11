@@ -8,12 +8,12 @@ import pop3.command.POP3Response;
 
 public abstract class CommandProcessor {
 	
-	static public class CommandArgs {
+	static public class ClientSessionState {
 		public String mUser;
 		public SessionState mState;
 		public boolean mCloseConnection;
 		
-		public CommandArgs(String user, SessionState state, boolean closeConnection) {
+		public ClientSessionState(String user, SessionState state, boolean closeConnection) {
 			mUser = user;
 			mState = state;
 			mCloseConnection = closeConnection;
@@ -22,7 +22,7 @@ public abstract class CommandProcessor {
 	
 	
 	protected Server mServer;
-	protected CommandArgs mArgs;
+	protected ClientSessionState mSession;
 	protected POP3Response mResponse;
 	
 	
@@ -32,11 +32,11 @@ public abstract class CommandProcessor {
 	}
 	
 	
-	public CommandArgs retrieveCommandArgs() {
-		return mArgs;
+	public ClientSessionState retrieveCommandArgs() {
+		return mSession;
 	}
 	
-	abstract public void process(String command, CommandArgs args);
+	abstract public void process(String command, ClientSessionState session);
 	
 	public POP3Response getResponse() {
 		return mResponse;

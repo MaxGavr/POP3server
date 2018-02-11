@@ -15,10 +15,10 @@ public class RETRCommandProcessor extends CommandProcessor {
 
 	
 	@Override
-	public void process(String command, CommandArgs args) {
-		mArgs = args;
+	public void process(String command, ClientSessionState session) {
+		mSession = session;
 
-		if (mArgs.mState != SessionState.TRANSACTION) {
+		if (mSession.mState != SessionState.TRANSACTION) {
 			mResponse.setResponse(false, "RETR command can only be used in TRANSACTION state");
 			return;
 		}
@@ -33,7 +33,7 @@ public class RETRCommandProcessor extends CommandProcessor {
 		} else {
 			// TODO: catch NumberFormatException
 			int msgIndex = Integer.parseInt(commandArgs[0]);
-			String msg = mServer.getUserMaildrop(mArgs.mUser).getMessage(msgIndex);
+			String msg = mServer.getUserMaildrop(mSession.mUser).getMessage(msgIndex);
 
 			mResponse.clearArgs();
 			mResponse.setPositive(true);

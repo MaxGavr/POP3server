@@ -11,15 +11,15 @@ public class STATCommandProcessor extends CommandProcessor {
 	}
 
 	@Override
-	public void process(String command, CommandArgs args) {
-		mArgs = args;
-		if (mArgs.mState != SessionState.TRANSACTION) {
+	public void process(String command, ClientSessionState session) {
+		mSession = session;
+		if (mSession.mState != SessionState.TRANSACTION) {
 			mResponse.setResponse(false, "STAT command can only be used in TRANSACTION state");
 			return;
 		}
 		
 		// success
-		Maildrop mail = mServer.getUserMaildrop(mArgs.mUser);
+		Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
 		mResponse.setResponse(true, mail.getMessageCount() + " " + mail.getMailSize());
 	}
 

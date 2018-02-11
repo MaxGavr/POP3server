@@ -12,30 +12,30 @@ public class PASSCommandProcessor extends CommandProcessor {
 	}
 
 	@Override
-	public void process(String command, CommandArgs args) {
-		mArgs = args;
-		if (mArgs.mState != SessionState.AUTHORIZATION) {
+	public void process(String command, ClientSessionState session) {
+		mSession = session;
+		if (mSession.mState != SessionState.AUTHORIZATION) {
 			mResponse.setResponse(false, "PASS command can only be used in AUTHORIZATION state");
 			return;
 		}
 		
-		if (!mServer.hasUser(mArgs.mUser)) {
+		if (!mServer.hasUser(mSession.mUser)) {
 			mResponse.setResponse(false, "login first");
 			return;
 		}
 		
 		String password = String.join("", CommandParser.getCommandArgs(command));
-		String actualPassword = mServer.getUserPassword(mArgs.mUser);
+		String actualPassword = mServer.getUserPassword(mSession.mUser);
 		
 		// TODO: handle actualPassword == null
 		if (actualPassword == null || !actualPassword.equals(password)) {
-			mResponse.setResponse(false, "invalid password for user " + mArgs.mUser);
+			mResponse.setResponse(false, "invalid password for user " + mSession.mUser);
 			return;
 		}
 		
-		Maildrop userMaildrop = mServer.getUserMaildrop(mArgs.mUser);
+		Maildrop userMaildrop = mServer.getUserMaildrop(mSession.mUser);
 		if (userMaildrop == null) {
-			mResponse.setResponse(false, "maildrop for user " + mArgs.mUser + " not found");
+			mResponse.setResponse(false, "maildrop for user " + mSession.mUser + " not found");
 			return;
 		} else if (userMaildrop.isLocked()) {
 			mResponse.setResponse(false, "maildrop is already locked");
@@ -44,8 +44,8 @@ public class PASSCommandProcessor extends CommandProcessor {
 		
 		// success
 		userMaildrop.lock();
-		mArgs.mState = SessionState.TRANSACTION;
-		mResponse.setResponse(true, "maildrop for user " + mArgs.mUser + " successfully locked");
+		mSession.mState = SessionState.TRANSACTION;
+		mResponse.setResponse(true, "maildrop for user " + mSession.mUser + " successfully locked");
 	}
 
 }

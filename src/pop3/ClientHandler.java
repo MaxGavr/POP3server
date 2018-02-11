@@ -2,15 +2,16 @@ package pop3;
 
 import java.net.*;
 
-import java.util.HashMap;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-import pop3.command.*;
-import pop3.command.CommandProcessor.CommandArgs;
+import pop3.command.POP3Response;
+import pop3.command.CommandParser;
+import pop3.command.CommandProcessor;
+import pop3.command.CommandProcessor.ClientSessionState;
 
 
 
@@ -24,9 +25,8 @@ public class ClientHandler implements Runnable {
 	private String mUser;
 	private SessionState mState;
 	private boolean mCloseConnection = false;
+
 	private Server mServer;
-	
-	private HashMap<String, CommandProcessor> mProcessors;
 	
 	
 	ClientHandler(Socket clientSocket, Server server) throws IOException {
@@ -35,16 +35,6 @@ public class ClientHandler implements Runnable {
 		
 		mSocketOutput = new DataOutputStream(mSocket.getOutputStream());
 		mSocketInput = new BufferedReader(new InputStreamReader(mSocket.getInputStream()));
-		
-		mProcessors = new HashMap<String, CommandProcessor>();
-		mProcessors.put("USER", new USERCommandProcessor(mServer));
-		mProcessors.put("PASS", new PASSCommandProcessor(mServer));
-		mProcessors.put("QUIT", new QUITCommandProcessor(mServer));
-		mProcessors.put("STAT", new STATCommandProcessor(mServer));
-		mProcessors.put("LIST", new LISTCommandProcessor(mServer));
-		mProcessors.put("RETR", new RETRCommandProcessor(mServer));
-		mProcessors.put("DELE", new DELECommandProcessor(mServer));
-		mProcessors.put("NOOP", new NOOPCommandProcessor(mServer));
 	}
 	
 	
@@ -69,7 +59,8 @@ public class ClientHandler implements Runnable {
 		try {
 			mSocketOutput.write(response.getString().getBytes(StandardCharsets.US_ASCII));
 			mSocketOutput.flush();
-			System.out.println("Send response: " + response.getString());
+			
+			mServer.serverMessage("Send response \n---\n" + response.getString() + "---\nto " + getClientAddress());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -79,17 +70,20 @@ public class ClientHandler implements Runnable {
 		try {
 			String command = mSocketInput.readLine();
 			if (command == null) {
+				mCloseConnection = true;
 				return;
 			}
 			
-			System.out.println("Received command: " + command);
+			mServer.serverMessage("Received command \"" + command + "\" from " + getClientAddress());
 			
 			if (!CommandParser.validate(command)) {
 				sendResponse(CommandParser.getInvalidResponse());
+			} else if (!mServer.isCommandAvailable(CommandParser.getCommandKeyword(command))) {
+				sendResponse(new POP3Response(false, "command is not available"));
 			} else {
 				CommandProcessor processor = getCommandProcessor(CommandParser.getCommandKeyword(command));
 				
-				processor.process(command, formCommandArgs());
+				processor.process(command, getClientSessionState());
 				applyCommandChanges(processor.retrieveCommandArgs());
 
 				sendResponse(processor.getResponse());
@@ -100,6 +94,7 @@ public class ClientHandler implements Runnable {
 	}
 	
 	private void disconnect() {
+		mServer.serverMessage("Disconnecting client " + getClientAddress());
 		try {
 			mSocketOutput.close();
 			mSocketInput.close();
@@ -109,18 +104,22 @@ public class ClientHandler implements Runnable {
 		}
 	}
 	
+	public String getClientAddress() {
+		return mSocket.getInetAddress().getHostAddress() + ":" + mSocket.getPort();
+	}
+	
 	private CommandProcessor getCommandProcessor(String commandKeyword) {
-		return mProcessors.get(commandKeyword);
+		return mServer.mProcessors.get(commandKeyword);
 	}
 	
-	private CommandArgs formCommandArgs() {
+	private ClientSessionState getClientSessionState() {
 		// TODO: check references
-		return new CommandProcessor.CommandArgs(mUser, mState, mCloseConnection);
+		return new CommandProcessor.ClientSessionState(mUser, mState, mCloseConnection);
 	}
 	
-	private void applyCommandChanges(CommandProcessor.CommandArgs args) {
-		mState = args.mState;
-		mUser = args.mUser;
-		mCloseConnection = args.mCloseConnection;
+	private void applyCommandChanges(CommandProcessor.ClientSessionState sessionState) {
+		mState = sessionState.mState;
+		mUser = sessionState.mUser;
+		mCloseConnection = sessionState.mCloseConnection;
 	}
 }

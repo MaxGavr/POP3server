@@ -10,15 +10,15 @@ public class QUITCommandProcessor extends CommandProcessor {
 	}
 
 	@Override
-	public void process(String command, CommandArgs args) {
-		mArgs = args;
+	public void process(String command, ClientSessionState session) {
+		mSession = session;
 		
-		if (mArgs.mState == SessionState.AUTHORIZATION) {
-			if (!mArgs.mUser.isEmpty()) {
-				mArgs.mUser = new String();
+		if (mSession.mState == SessionState.AUTHORIZATION) {
+			if (!mSession.mUser.isEmpty()) {
+				mSession.mUser = new String();
 			}
 			
-			mArgs.mCloseConnection = true;
+			mSession.mCloseConnection = true;
 			mResponse.setResponse(true, "signing off");
 		}
 	}
