@@ -38,13 +38,13 @@ public class Maildrop {
 	
 	public void markMessageToDelete(int msgIndex) {
 		if (isValidIndex(msgIndex)) {
-			mDeletedMessages.add(msgIndex);
+			mDeletedMessages.add(msgIndex - 1);
 		}
 	}
 	
 	public void unmarkMessageToDelete(int msgIndex) {
 		if (isValidIndex(msgIndex)) {
-			mDeletedMessages.remove(msgIndex);
+			mDeletedMessages.remove(msgIndex - 1);
 		}
 	}
 	
@@ -95,7 +95,7 @@ public class Maildrop {
 	}
 	
 	public boolean isMessageMarked(int msgIndex) {
-		return mDeletedMessages.contains(msgIndex);
+		return mDeletedMessages.contains(msgIndex -1 );
 	}
 	
 	public boolean isLocked() {

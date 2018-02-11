@@ -24,6 +24,8 @@ public class CommandParser {
 		mKnownCommands.add("STAT");
 		mKnownCommands.add("LIST");
 		mKnownCommands.add("RETR");
+		mKnownCommands.add("DELE");
+		mKnownCommands.add("NOOP");
 	}
 	
 	

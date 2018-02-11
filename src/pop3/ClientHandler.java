@@ -43,6 +43,8 @@ public class ClientHandler implements Runnable {
 		mProcessors.put("STAT", new STATCommandProcessor(mServer));
 		mProcessors.put("LIST", new LISTCommandProcessor(mServer));
 		mProcessors.put("RETR", new RETRCommandProcessor(mServer));
+		mProcessors.put("DELE", new DELECommandProcessor(mServer));
+		mProcessors.put("NOOP", new NOOPCommandProcessor(mServer));
 	}
 	
 	
