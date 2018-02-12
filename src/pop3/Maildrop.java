@@ -89,10 +89,11 @@ public class Maildrop {
 	
 	public int getMailSize() {
 		int size = 0;
-		for (String string : mMessages) {
-			size += string.getBytes(StandardCharsets.US_ASCII).length;
+
+		for (int msgIndex = 1; msgIndex <= mMessages.size(); ++msgIndex) {
+			size += getMessageSize(msgIndex);
 		}
-		
+
 		return size;
 	}
 	

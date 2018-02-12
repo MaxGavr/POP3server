@@ -7,7 +7,7 @@ import pop3.SessionState;
 public class RSETCommandProcessor extends CommandProcessor {
 
 	public RSETCommandProcessor(Server server) {
-		super(server);
+		super("RSET", server);
 	}
 
 	@Override

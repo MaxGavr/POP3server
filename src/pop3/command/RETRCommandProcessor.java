@@ -2,6 +2,7 @@ package pop3.command;
 
 import java.util.ArrayList;
 
+import pop3.Maildrop;
 import pop3.Server;
 import pop3.SessionState;
 
@@ -10,7 +11,7 @@ import pop3.SessionState;
 public class RETRCommandProcessor extends CommandProcessor {
 
 	public RETRCommandProcessor(Server server) {
-		super(server);
+		super("RETR", server);
 	}
 
 	
@@ -31,10 +32,28 @@ public class RETRCommandProcessor extends CommandProcessor {
 			mResponse.setResponse(false, "too much arguments");
 			return;
 		} else {
-			// TODO: catch NumberFormatException
-			int msgIndex = Integer.parseInt(commandArgs[0]);
-			String msg = mServer.getUserMaildrop(mSession.mUser).getMessage(msgIndex);
+			int msgIndex = 0;
+			try {
+				msgIndex = Integer.parseInt(commandArgs[0]);
+			} catch (NumberFormatException e) {
+				mResponse.setResponse(false, "invalid message index");
+				return;
+			}
 
+			Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
+			
+			if (!mail.isValidIndex(msgIndex)) {
+				mResponse.setResponse(false, "no such message");
+				return;
+			}
+			
+			if (mail.isMessageMarked(msgIndex)) {
+				mResponse.setResponse(false, "message is marked for deletion");
+				return;
+			}
+
+			String msg = mail.getMessage(msgIndex);
+			
 			mResponse.clearArgs();
 			mResponse.setPositive(true);
 			mResponse.setArgs(splitMessageIntoLines(msg));

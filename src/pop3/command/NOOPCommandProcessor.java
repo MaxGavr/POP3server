@@ -6,7 +6,7 @@ import pop3.SessionState;
 public class NOOPCommandProcessor extends CommandProcessor {
 
 	public NOOPCommandProcessor(Server server) {
-		super(server);
+		super("NOOP", server);
 	}
 
 	@Override
@@ -18,7 +18,8 @@ public class NOOPCommandProcessor extends CommandProcessor {
 			return;
 		}
 		
-		mResponse.setResponse(false, "");
+		mResponse.clearArgs();
+		mResponse.setPositive(true);
 	}
 
 }

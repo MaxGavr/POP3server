@@ -13,7 +13,6 @@ public class CommandParser {
 	//private static String mKeywordRegex = "[\\p{Print}]{3,4}";
 	//private static String mArgumentRegex = "[\\p{Print}]{1,40}";
 	
-	// TODO: add \r\n
 	private static Pattern mPOP3CommandPattern = Pattern.compile("^[\\p{Print}]{3,4}( [\\p{Print}]{1,40})*$");
 
 	
@@ -46,5 +45,9 @@ public class CommandParser {
 	
 	public static int getLineMaxLength() {
 		return 512;
+	}
+
+	public static String getLineEnd() {
+		return "\\r\\n";
 	}
 }

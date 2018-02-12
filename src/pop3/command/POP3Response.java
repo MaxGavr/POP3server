@@ -40,7 +40,6 @@ public class POP3Response {
 	
 	public POP3Response(boolean isPositive, String[] args) {
 		mIsPositive = isPositive;
-		mIsMultiline = true;
 		setArgs(args);
 	}
 	
@@ -94,8 +93,10 @@ public class POP3Response {
 			}
 			
 			str += "." + getLineEnd();
-		} else {
+		} else if (!mArgs.isEmpty()) {
 			str += " " + mArgs.get(0) + getLineEnd();
+		} else {
+			str += getLineEnd();
 		}
 		
 		return str;

@@ -8,12 +8,13 @@ import pop3.Maildrop;
 public class PASSCommandProcessor extends CommandProcessor {
 
 	public PASSCommandProcessor(Server server) {
-		super(server);
+		super("PASS", server);
 	}
 
 	@Override
 	public void process(String command, ClientSessionState session) {
 		mSession = session;
+		
 		if (mSession.mState != SessionState.AUTHORIZATION) {
 			mResponse.setResponse(false, "PASS command can only be used in AUTHORIZATION state");
 			return;
@@ -25,10 +26,13 @@ public class PASSCommandProcessor extends CommandProcessor {
 		}
 		
 		String password = String.join("", CommandParser.getCommandArgs(command));
-		String actualPassword = mServer.getUserPassword(mSession.mUser);
+		if (password.isEmpty()) {
+			mResponse.setResponse(false, "specify password");
+			return;
+		}
 		
-		// TODO: handle actualPassword == null
-		if (actualPassword == null || !actualPassword.equals(password)) {
+		String actualPassword = mServer.getUserPassword(mSession.mUser);
+		if (!actualPassword.equals(password)) {
 			mResponse.setResponse(false, "invalid password for user " + mSession.mUser);
 			return;
 		}

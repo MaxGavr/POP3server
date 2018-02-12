@@ -18,7 +18,7 @@ import pop3.command.CommandProcessor;
 
 public class Server {
 	
-	private final int IP_PORT = 110;
+	private final int POP3_IP_PORT = 110;
 	private final int TOTAL_CLIENTS = 4;
 	private int mAcceptTimeout = 1_000 * 1;
 	
@@ -28,7 +28,7 @@ public class Server {
 	
 	volatile HashMap<String, CommandProcessor> mProcessors;
 	
-	private ExecutorService executor;
+	private ExecutorService mExecutor;
 	
 	private BufferedReader mConsoleInput;
 	
@@ -40,49 +40,73 @@ public class Server {
 	
 	public void start(){
 		serverMessage("Server started");
-		executor = Executors.newFixedThreadPool(TOTAL_CLIENTS);
+		mExecutor = Executors.newFixedThreadPool(TOTAL_CLIENTS);
 		
 		try {
-			mServerSocket = new ServerSocket(IP_PORT);
+			mServerSocket = new ServerSocket(POP3_IP_PORT);
 			mServerSocket.setSoTimeout(mAcceptTimeout);
 			
 			mConsoleInput = new BufferedReader(new InputStreamReader(System.in));
-			
-			acceptNewClients();
 
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
-		executor.shutdown();
+		acceptNewClients();
+		
+		shutdown();
+	}
+	
+	private void shutdown() {
+		if (!mServerSocket.isClosed()) {
+			try {
+				mServerSocket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		mExecutor.shutdown();
 	}
 
-	private void acceptNewClients() throws IOException {
+	private void acceptNewClients() {
 		while (!mServerSocket.isClosed()) {
-			if (mConsoleInput.ready()) {
-				String input = mConsoleInput.readLine();
-				
-				if (input.equalsIgnoreCase("quit")) {
-					System.out.println("Quit command received");
-					
-					mServerSocket.close();
-					break;
-				}
+			
+			String input = getConsoleInput();
+			
+			if (input != null && input.equalsIgnoreCase("quit")) {
+				serverMessage("Receive QUIT command from console");
+				return;
 			}
 			
 			Socket clientSocket;
 			try {
 				clientSocket = mServerSocket.accept();
-			}
-			catch (SocketTimeoutException e)
-			{
+			} catch (SocketTimeoutException e) {
+				continue;
+			} catch (IOException e) {
+				e.printStackTrace();
 				continue;
 			}
 			
 			ClientHandler client = new ClientHandler(clientSocket, this);
 			serverMessage("Accept client " + client.getClientAddress());
-			executor.execute(client);
+			mExecutor.execute(client);
 		}
+	}
+	
+	private String getConsoleInput() {
+		String consoleInput = null;
+
+		try {
+			if (mConsoleInput.ready()) {
+				consoleInput = mConsoleInput.readLine();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return consoleInput;
 	}
 	
 	private void loadUsers() {

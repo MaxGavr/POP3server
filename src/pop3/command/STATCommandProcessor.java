@@ -7,12 +7,13 @@ import pop3.SessionState;
 public class STATCommandProcessor extends CommandProcessor {
 
 	public STATCommandProcessor(Server server) {
-		super(server);
+		super("STAT", server);
 	}
 
 	@Override
 	public void process(String command, ClientSessionState session) {
 		mSession = session;
+
 		if (mSession.mState != SessionState.TRANSACTION) {
 			mResponse.setResponse(false, "STAT command can only be used in TRANSACTION state");
 			return;

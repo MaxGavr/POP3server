@@ -2,11 +2,12 @@ package pop3;
 
 import java.net.*;
 
-import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+
+import java.util.NoSuchElementException;
+import java.util.Scanner;
 
 import pop3.command.POP3Response;
 import pop3.command.CommandParser;
@@ -20,7 +21,7 @@ public class ClientHandler implements Runnable {
 	private Socket mSocket;
 	
 	private DataOutputStream mSocketOutput;
-	private BufferedReader mSocketInput;
+	private Scanner mSocketInput;
 	
 	private String mUser;
 	private SessionState mState;
@@ -29,17 +30,26 @@ public class ClientHandler implements Runnable {
 	private Server mServer;
 	
 	
-	ClientHandler(Socket clientSocket, Server server) throws IOException {
+	ClientHandler(Socket clientSocket, Server server) {
 		mSocket = clientSocket;
 		mServer = server;
-		
-		mSocketOutput = new DataOutputStream(mSocket.getOutputStream());
-		mSocketInput = new BufferedReader(new InputStreamReader(mSocket.getInputStream()));
 	}
 	
 	
 	@Override
 	public void run() {
+		try {
+			mSocketInput = new Scanner(mSocket.getInputStream());
+			mSocketInput.useDelimiter(CommandParser.getLineEnd());
+
+			mSocketOutput = new DataOutputStream(mSocket.getOutputStream());
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			disconnect();
+			return;
+		}
+		
 		mState = SessionState.AUTHORIZATION;
 		sendGreeting();
 		
@@ -67,31 +77,38 @@ public class ClientHandler implements Runnable {
 	}
 	
 	private void receiveCommand() {
+		String command = null;
+		
 		try {
-			String command = mSocketInput.readLine();
-			if (command == null) {
-				mCloseConnection = true;
-				return;
-			}
-			
-			mServer.serverMessage("Received command \"" + command + "\" from " + getClientAddress());
-			
-			if (!CommandParser.validate(command)) {
-				sendResponse(CommandParser.getInvalidResponse());
-			} else if (!mServer.isCommandAvailable(CommandParser.getCommandKeyword(command))) {
-				sendResponse(new POP3Response(false, "command is not implemented"));
-			} else {
-				CommandProcessor processor = getCommandProcessor(CommandParser.getCommandKeyword(command));
-				
-				processor.process(command, getClientSessionState());
-				applyCommandChanges(processor.retrieveCommandArgs());
-
-				sendResponse(processor.getResponse());
-			}
-		} catch (IOException e) {
+			command = mSocketInput.nextLine();
+		} catch (NoSuchElementException e) {
 			e.printStackTrace();
+			return;
+		}
+		
+		if (command == null) {
+			mCloseConnection = true;
+			return;
+		}
+		
+		mServer.serverMessage("Received command \"" + command + "\" from " + getClientAddress());
+		
+		if (!CommandParser.validate(command)) {
+			sendResponse(CommandParser.getInvalidResponse());
+			
+		} else if (!mServer.isCommandAvailable(CommandParser.getCommandKeyword(command))) {
+			sendResponse(new POP3Response(false, "command is not implemented"));
+			
+		} else {
+			CommandProcessor processor = getCommandProcessor(CommandParser.getCommandKeyword(command));
+			
+			processor.process(command, getClientSessionState());
+			applyCommandChanges(processor.getClientSessionState());
+
+			sendResponse(processor.getResponse());
 		}
 	}
+
 	
 	private void disconnect() {
 		mServer.serverMessage("Disconnecting client " + getClientAddress());
@@ -103,7 +120,10 @@ public class ClientHandler implements Runnable {
 		try {
 			mSocketOutput.close();
 			mSocketInput.close();
-			mSocket.close();
+			
+			if (!mSocket.isClosed()) {
+				mSocket.close();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

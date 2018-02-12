@@ -7,7 +7,7 @@ import pop3.SessionState;
 public class DELECommandProcessor extends CommandProcessor {
 
 	public DELECommandProcessor(Server server) {
-		super(server);
+		super("DELE", server);
 	}
 
 	@Override
@@ -20,13 +20,22 @@ public class DELECommandProcessor extends CommandProcessor {
 		}
 		
 		String[] commandArgs = CommandParser.getCommandArgs(command);
-		if (commandArgs.length != 1) {
+		if (commandArgs.length == 0) {
 			mResponse.setResponse(false, "message index is not specified");
+			return;
+		} else if (commandArgs.length > 1) {
+			mResponse.setResponse(false, "too much arguments");
 			return;
 		}
 		
-		// TODO: catch NumberFormatException
-		int msgIndex = Integer.parseInt(String.join("", commandArgs));
+		int msgIndex = 0;
+		try {
+			msgIndex = Integer.parseInt(String.join("", commandArgs));
+		} catch (NumberFormatException e) {
+			mResponse.setResponse(false, "invalid message index");
+			return;
+		}
+		
 		Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
 		
 		if (!mail.isValidIndex(msgIndex)) {

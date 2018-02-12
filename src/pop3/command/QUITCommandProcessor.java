@@ -4,10 +4,12 @@ import pop3.Maildrop;
 import pop3.Server;
 import pop3.SessionState;
 
+
+
 public class QUITCommandProcessor extends CommandProcessor {
 
 	public QUITCommandProcessor(Server server) {
-		super(server);
+		super("QUIT", server);
 	}
 
 	@Override

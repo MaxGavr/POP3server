@@ -20,19 +20,25 @@ public abstract class CommandProcessor {
 		}
 	}
 	
+	protected final String mCommand; 
 	
 	protected Server mServer;
 	protected ClientSessionState mSession;
 	protected POP3Response mResponse;
 	
 	
-	public CommandProcessor(Server server) {
+	public CommandProcessor(String command, Server server) {
+		mCommand = command;
 		mServer = server;
 		mResponse = new POP3Response();
 	}
 	
 	
-	public ClientSessionState retrieveCommandArgs() {
+	public String getCommand() {
+		return mCommand;
+	}
+	
+	public ClientSessionState getClientSessionState() {
 		return mSession;
 	}
 	

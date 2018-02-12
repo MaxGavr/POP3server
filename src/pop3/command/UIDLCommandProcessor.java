@@ -7,7 +7,7 @@ import pop3.SessionState;
 public class UIDLCommandProcessor extends CommandProcessor {
 
 	public UIDLCommandProcessor(Server server) {
-		super(server);
+		super("UIDL", server);
 	}
 
 	@Override
@@ -22,9 +22,18 @@ public class UIDLCommandProcessor extends CommandProcessor {
 		String[] commandArgs = CommandParser.getCommandArgs(command);
 		Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
 		
-		if (commandArgs.length > 0) {
-			// TODO: catch NumberFormatException
-			int msgIndex = Integer.parseInt(String.join("", commandArgs));
+		if (commandArgs.length > 1) {
+			mResponse.setResponse(false, "too much arguments");
+			return;
+		} else if (commandArgs.length == 1) {
+			int msgIndex = 0;
+
+			try {
+				msgIndex = Integer.parseInt(commandArgs[0]);	
+			} catch (NumberFormatException e) {
+				mResponse.setResponse(false, "invalid message index");
+				return;
+			}
 			
 			if (!mail.isValidIndex(msgIndex)) {
 				mResponse.setResponse(false, "no such message");
@@ -36,9 +45,11 @@ public class UIDLCommandProcessor extends CommandProcessor {
 				return;
 			}
 			
+			// success
 			mResponse.setResponse(true, msgIndex + " " + mail.getMessage(msgIndex).hashCode());
 			
 		} else {
+			// success
 			mResponse.clearArgs();
 			mResponse.setPositive(true);
 			for (int msgIndex = 1; msgIndex <= mail.getMessageCount(); ++msgIndex) {

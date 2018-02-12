@@ -7,7 +7,7 @@ import pop3.SessionState;
 public class LISTCommandProcessor extends CommandProcessor {
 
 	public LISTCommandProcessor(Server server) {
-		super(server);
+		super("LIST", server);
 	}
 
 	@Override
@@ -22,19 +22,26 @@ public class LISTCommandProcessor extends CommandProcessor {
 		Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
 		
 		String[] commandArgs = CommandParser.getCommandArgs(command);
-		if (commandArgs.length > 0) {
-			// TODO: catch NumberFormatException
-			int msgIndex = Integer.parseInt(String.join("", commandArgs));
+		if (commandArgs.length > 1){ 
+			mResponse.setResponse(false, "too much arguments");
+		} else if (commandArgs.length == 1) {
+			
+			int msgIndex = 0;
+			try {
+				msgIndex = Integer.parseInt(String.join("", commandArgs));
+			} catch (NumberFormatException e) {
+				mResponse.setResponse(false, "invalid message index");
+				return;
+			}
 			
 			if (!mail.isValidIndex(msgIndex)) {
 				mResponse.setResponse(false, "no such message");
-				return;
 			} else if (mail.isMessageMarked(msgIndex)) {
 				mResponse.setResponse(false, "message is marked for deletion");
-				return;
 			} else {
 				mResponse.setResponse(true, msgIndex + " " + mail.getMessageSize(msgIndex));
 			}
+
 		} else {
 			mResponse.clearArgs();
 			mResponse.setPositive(true);
