@@ -70,7 +70,7 @@ public class ClientHandler implements Runnable {
 			mSocketOutput.write(response.getString().getBytes(StandardCharsets.US_ASCII));
 			mSocketOutput.flush();
 			
-			mServer.serverMessage("Send response \n---\n" + response.getString() + "---\nto " + getClientAddress());
+			mServer.serverMessage("Send response to " + getClientAddress() + "\n---\n" + response.getString() + "---");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

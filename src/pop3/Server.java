@@ -58,6 +58,8 @@ public class Server {
 	}
 	
 	private void shutdown() {
+		serverMessage("Stopping server...");
+		
 		if (!mServerSocket.isClosed()) {
 			try {
 				mServerSocket.close();
@@ -67,6 +69,7 @@ public class Server {
 		}
 		
 		mExecutor.shutdown();
+		serverMessage("Server stopped");
 	}
 
 	private void acceptNewClients() {
