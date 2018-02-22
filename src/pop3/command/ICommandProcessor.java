@@ -6,5 +6,5 @@ import pop3.command.POP3Response;
 
 public interface ICommandProcessor {
 	
-	public POP3Response process(CommandState state);
+	public POP3Response process(ClientSessionState state);
 }

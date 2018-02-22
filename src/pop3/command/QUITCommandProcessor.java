@@ -18,7 +18,7 @@ public class QUITCommandProcessor implements ICommandProcessor {
 	
 
 	@Override
-	public POP3Response process(CommandState state) {
+	public POP3Response process(ClientSessionState state) {
 		POP3Response response = new POP3Response();
 		
 		if (state.getSessionState() == SessionState.AUTHORIZATION) {

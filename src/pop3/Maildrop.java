@@ -1,5 +1,6 @@
 package pop3;
 
+import java.util.List;
 import java.util.ArrayList;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -14,60 +15,60 @@ import java.nio.charset.StandardCharsets;
 
 
 public class Maildrop {
-	private ArrayList<String> mMessages;
-	private TreeSet<Integer> mMarkedMessages;
+	private List<String> messages;
+	private TreeSet<Integer> markedMessages;
 	
-	private boolean mIsLocked;
+	private boolean isLocked;
 	
 	
 	public Maildrop() {
-		mMessages = new ArrayList<String>();
-		mMarkedMessages = new TreeSet<Integer>();
+		messages = new ArrayList<String>();
+		markedMessages = new TreeSet<Integer>();
 	}
 	
 	public Maildrop(String fileName) {
 		try {
 			loadFromFile(fileName);
 		} catch (FileNotFoundException e) {
-			mMessages = new ArrayList<String>();
+			messages = new ArrayList<String>();
 		}
 		
-		mMarkedMessages = new TreeSet<Integer>();
+		markedMessages = new TreeSet<Integer>();
 	}
 	
 	
 	public void markMessageToDelete(int msgIndex) {
 		if (isValidIndex(msgIndex)) {
-			mMarkedMessages.add(msgIndex);
+			markedMessages.add(msgIndex);
 		}
 	}
 	
 	public void unmarkMessageToDelete(int msgIndex) {
 		if (isValidIndex(msgIndex)) {
-			mMarkedMessages.remove(msgIndex);
+			markedMessages.remove(msgIndex);
 		}
 	}
 	
 	public boolean deleteMarkedMessages() {
-		for (Integer msgIndex : mMarkedMessages.descendingSet()) {
-			mMessages.remove(msgIndex - 1);
+		for (Integer msgIndex : markedMessages.descendingSet()) {
+			messages.remove(msgIndex - 1);
 		}
-		mMarkedMessages.clear();
+		markedMessages.clear();
 		
 		return true;
 	}
 	
 	public ArrayList<String> getMessages() {
-		return mMessages;
+		return (ArrayList<String>) messages;
 	}
 	
 	public TreeSet<Integer> getMarkedMessages() {
-		return mMarkedMessages;
+		return markedMessages;
 	}
 	
 	public String getMessage(int msgIndex) {
 		if (isValidIndex(msgIndex)) {
-			return mMessages.get(msgIndex - 1);
+			return messages.get(msgIndex - 1);
 		} else {
 			// TODO: get rid of null
 			return null;
@@ -76,7 +77,7 @@ public class Maildrop {
 	
 	public int getMessageSize(int msgIndex) {
 		if (isValidIndex(msgIndex)) {
-			return mMessages.get(msgIndex - 1).getBytes(StandardCharsets.US_ASCII).length;
+			return messages.get(msgIndex - 1).getBytes(StandardCharsets.US_ASCII).length;
 		} else {
 			// TODO: dunno what to do
 			return 0;
@@ -84,13 +85,13 @@ public class Maildrop {
 	}
 	
 	public int getMessageCount() {
-		return mMessages.size();
+		return messages.size();
 	}
 	
 	public int getMailSize() {
 		int size = 0;
 
-		for (int msgIndex = 1; msgIndex <= mMessages.size(); ++msgIndex) {
+		for (int msgIndex = 1; msgIndex <= messages.size(); ++msgIndex) {
 			size += getMessageSize(msgIndex);
 		}
 
@@ -98,28 +99,28 @@ public class Maildrop {
 	}
 	
 	public boolean isValidIndex(int msgIndex) {
-		return msgIndex > 0 && msgIndex <= mMessages.size();
+		return msgIndex > 0 && msgIndex <= messages.size();
 	}
 	
 	public boolean isMessageMarked(int msgIndex) {
-		return mMarkedMessages.contains(msgIndex);
+		return markedMessages.contains(msgIndex);
 	}
 	
 	public boolean isLocked() {
-		return mIsLocked;
+		return isLocked;
 	}
 	
 	public void lock() {
-		mIsLocked = true;
+		isLocked = true;
 	}
 	
 	public void unlock() {
-		mIsLocked = false;
+		isLocked = false;
 	}
 	
 	public void loadFromFile(String fileName) throws FileNotFoundException {
 		BufferedReader fileReader = new BufferedReader(new FileReader(fileName));
-		mMessages = (ArrayList<String>)fileReader.lines().collect(Collectors.toList());
+		messages = (ArrayList<String>)fileReader.lines().collect(Collectors.toList());
 		try {
 			fileReader.close();
 		} catch (IOException e) {

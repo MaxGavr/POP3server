@@ -21,15 +21,15 @@ public class Server {
 	
 	private final int POP3_IP_PORT = 110;
 	private final int TOTAL_CLIENTS = 4;
-	private int mAcceptTimeout = 1_000 * 1;
+	private int acceptTimeout = 1_000 * 1;
 	
-	private ServerSocket mServerSocket;
-	private volatile HashMap<String, Maildrop> mUserMaildrop;
-	private volatile HashMap<String, String> mUserPassword;
+	private ServerSocket serverSocket;
+	private volatile Map<String, Maildrop> userMaildrop;
+	private volatile Map<String, String> userPassword;
 	
-	private ExecutorService mExecutor;
+	private ExecutorService executor;
 	
-	private BufferedReader mConsoleInput;
+	private BufferedReader consoleInput;
 	
 	
 	public Server() {
@@ -38,13 +38,13 @@ public class Server {
 	
 	public void start(){
 		serverMessage("Server started");
-		mExecutor = Executors.newFixedThreadPool(TOTAL_CLIENTS);
+		executor = Executors.newFixedThreadPool(TOTAL_CLIENTS);
 		
 		try {
-			mServerSocket = new ServerSocket(POP3_IP_PORT);
-			mServerSocket.setSoTimeout(mAcceptTimeout);
+			serverSocket = new ServerSocket(POP3_IP_PORT);
+			serverSocket.setSoTimeout(acceptTimeout);
 			
-			mConsoleInput = new BufferedReader(new InputStreamReader(System.in));
+			consoleInput = new BufferedReader(new InputStreamReader(System.in));
 
 		} catch (IOException e) {
 			e.printStackTrace();	
@@ -58,20 +58,20 @@ public class Server {
 	private void shutdown() {
 		serverMessage("Stopping server...");
 		
-		if (!mServerSocket.isClosed()) {
+		if (!serverSocket.isClosed()) {
 			try {
-				mServerSocket.close();
+				serverSocket.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 		
-		mExecutor.shutdown();
+		executor.shutdown();
 		serverMessage("Server stopped");
 	}
 
 	private void acceptNewClients() {
-		while (!mServerSocket.isClosed()) {
+		while (!serverSocket.isClosed()) {
 			
 			String input = getConsoleInput();
 			
@@ -82,7 +82,7 @@ public class Server {
 			
 			Socket clientSocket;
 			try {
-				clientSocket = mServerSocket.accept();
+				clientSocket = serverSocket.accept();
 			} catch (SocketTimeoutException e) {
 				continue;
 			} catch (IOException e) {
@@ -90,7 +90,7 @@ public class Server {
 				continue;
 			}
 			
-			mExecutor.execute(createClientHandler(clientSocket));
+			executor.execute(createClientHandler(clientSocket));
 		}
 	}
 	
@@ -114,29 +114,29 @@ public class Server {
 	}
 	
 	private String getConsoleInput() {
-		String consoleInput = null;
+		String input = null;
 
 		try {
-			if (mConsoleInput.ready()) {
-				consoleInput = mConsoleInput.readLine();
+			if (consoleInput.ready()) {
+				input = consoleInput.readLine();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
-		return consoleInput;
+		return input;
 	}
 	
 	private void loadUsers() {
-		mUserMaildrop = new HashMap<String, Maildrop>();
-		mUserMaildrop.put("max", new Maildrop("max.txt"));
-		mUserMaildrop.put("jack", new Maildrop("jack.txt"));
-		mUserMaildrop.put("lucy", new Maildrop("lucy.txt"));
+		userMaildrop = new HashMap<String, Maildrop>();
+		userMaildrop.put("max", new Maildrop("max.txt"));
+		userMaildrop.put("jack", new Maildrop("jack.txt"));
+		userMaildrop.put("lucy", new Maildrop("lucy.txt"));
 		
-		mUserPassword = new HashMap<String, String>();
-		mUserPassword.put("max", "pass_max");
-		mUserPassword.put("jack", "pass_jack");
-		mUserPassword.put("lucy", "pass_lucy");
+		userPassword = new HashMap<String, String>();
+		userPassword.put("max", "pass_max");
+		userPassword.put("jack", "pass_jack");
+		userPassword.put("lucy", "pass_lucy");
 	}
 	
 	synchronized void serverMessage(String msg) {
@@ -144,22 +144,22 @@ public class Server {
 	}
 	
 	public int getTimeout() {
-		return mAcceptTimeout;
+		return acceptTimeout;
 	}
 
 	public void setTimeout(int timeout) {
-		mAcceptTimeout = timeout;
+		acceptTimeout = timeout;
 	}
 	
 	public boolean hasUser(String user) {
-		return mUserMaildrop.get(user) != null;
+		return userMaildrop.get(user) != null;
 	}
 	
 	public synchronized String getUserPassword(String user) {
-		return mUserPassword.get(user);
+		return userPassword.get(user);
 	}
 	
 	public synchronized Maildrop getUserMaildrop(String user) {
-		return mUserMaildrop.get(user);
+		return userMaildrop.get(user);
 	}
 }

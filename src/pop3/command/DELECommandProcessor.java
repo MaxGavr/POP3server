@@ -15,7 +15,7 @@ public class DELECommandProcessor implements ICommandProcessor {
 
 	
 	@Override
-	public POP3Response process(CommandState state) {
+	public POP3Response process(ClientSessionState state) {
 	
 		if (state.getSessionState() != SessionState.TRANSACTION) {
 			return new POP3Response(false, "DELE command can only be used in TRANSACTION state");

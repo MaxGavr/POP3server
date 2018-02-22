@@ -4,7 +4,7 @@ import pop3.SessionState;
 
 
 
-public class CommandState {
+public class ClientSessionState {
 	
 	private String command;
 	
@@ -13,7 +13,7 @@ public class CommandState {
 	private boolean closeConnection;
 	
 	
-	public CommandState() {
+	public ClientSessionState() {
 		command = "";
 		user = "";
 		sessionState = SessionState.AUTHORIZATION;

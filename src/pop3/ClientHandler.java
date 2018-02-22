@@ -12,42 +12,42 @@ import java.util.Scanner;
 
 import pop3.command.POP3Response;
 import pop3.command.CommandParser;
-import pop3.command.CommandState;
+import pop3.command.ClientSessionState;
 import pop3.command.ICommandProcessor;
 
 
 
 public class ClientHandler implements Runnable {
 
-	private Socket mSocket;
+	private Socket socket;
 	
-	private DataOutputStream mSocketOutput;
-	private Scanner mSocketInput;
+	private DataOutputStream socketOutput;
+	private Scanner socketInput;
 	
-	private String mUser;
-	private SessionState mState;
-	private boolean mCloseConnection = false;
+	private String user;
+	private SessionState sessionState;
+	private boolean closeConnection = false;
 
-	private Server mServer;
+	private Server server;
 	
-	private Map<String, ICommandProcessor> mProcessors;
+	private Map<String, ICommandProcessor> processors;
 	
 	
 	ClientHandler(Socket clientSocket, Server server) {
-		mSocket = clientSocket;
-		mServer = server;
+		this.socket = clientSocket;
+		this.server = server;
 		
-		mProcessors = new HashMap<String, ICommandProcessor>();
+		processors = new HashMap<String, ICommandProcessor>();
 	}
 	
 	
 	@Override
 	public void run() {
 		try {
-			mSocketInput = new Scanner(mSocket.getInputStream());
-			mSocketInput.useDelimiter(CommandParser.getLineEnd());
+			socketInput = new Scanner(socket.getInputStream());
+			socketInput.useDelimiter(CommandParser.getLineEnd());
 
-			mSocketOutput = new DataOutputStream(mSocket.getOutputStream());
+			socketOutput = new DataOutputStream(socket.getOutputStream());
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -55,10 +55,10 @@ public class ClientHandler implements Runnable {
 			return;
 		}
 		
-		mState = SessionState.AUTHORIZATION;
+		sessionState = SessionState.AUTHORIZATION;
 		sendGreeting();
 		
-		while (!mSocket.isClosed() && !mCloseConnection) {
+		while (!socket.isClosed() && !closeConnection) {
 			receiveCommand();
 		}
 		
@@ -72,10 +72,10 @@ public class ClientHandler implements Runnable {
 	
 	private void sendResponse(POP3Response response) {
 		try {
-			mSocketOutput.write(response.getString().getBytes(StandardCharsets.US_ASCII));
-			mSocketOutput.flush();
+			socketOutput.write(response.getString().getBytes(StandardCharsets.US_ASCII));
+			socketOutput.flush();
 			
-			mServer.serverMessage("Send response to " + getClientAddress() + "\n---\n" + response.getString() + "---");
+			server.serverMessage("Send response to " + getClientAddress() + "\n---\n" + response.getString() + "---");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -85,18 +85,18 @@ public class ClientHandler implements Runnable {
 		String command = null;
 		
 		try {
-			command = mSocketInput.nextLine();
+			command = socketInput.nextLine();
 		} catch (NoSuchElementException e) {
 			e.printStackTrace();
 			return;
 		}
 		
 		if (command == null) {
-			mCloseConnection = true;
+			closeConnection = true;
 			return;
 		}
 		
-		mServer.serverMessage("Received command \"" + command + "\" from " + getClientAddress());
+		server.serverMessage("Received command \"" + command + "\" from " + getClientAddress());
 		
 		if (!CommandParser.validate(command)) {
 			sendResponse(CommandParser.getInvalidResponse());
@@ -106,7 +106,7 @@ public class ClientHandler implements Runnable {
 			
 		} else {
 			ICommandProcessor processor = getCommandProcessor(CommandParser.getCommandKeyword(command));
-			CommandState state = getClientSessionState();
+			ClientSessionState state = getClientSessionState();
 			state.setCommand(command);
 			
 			POP3Response response = processor.process(state);
@@ -118,18 +118,18 @@ public class ClientHandler implements Runnable {
 
 	
 	private void disconnect() {
-		mServer.serverMessage("Disconnecting client " + getClientAddress());
+		server.serverMessage("Disconnecting client " + getClientAddress());
 		
-		if (mState == SessionState.TRANSACTION) {
-			mServer.getUserMaildrop(mUser).unlock();
+		if (sessionState == SessionState.TRANSACTION) {
+			server.getUserMaildrop(user).unlock();
 		}
 		
 		try {
-			mSocketOutput.close();
-			mSocketInput.close();
+			socketOutput.close();
+			socketInput.close();
 			
-			if (!mSocket.isClosed()) {
-				mSocket.close();
+			if (!socket.isClosed()) {
+				socket.close();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -137,36 +137,36 @@ public class ClientHandler implements Runnable {
 	}
 	
 	public String getClientAddress() {
-		return mSocket.getInetAddress().getHostAddress() + ":" + mSocket.getPort();
+		return socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
 	}
 	
 	public boolean isCommandAvailable(String command) {
-		return mProcessors.containsKey(command);
+		return processors.containsKey(command);
 	}
 	
 	public void registerCommand(String command, ICommandProcessor processor) {
-		mProcessors.put(command, processor);
-		//serverMessage("Register command " + command);
+		processors.put(command, processor);
+		server.serverMessage("Register command " + command + " for client " + getClientAddress());
 	}
 	
 	
 	private ICommandProcessor getCommandProcessor(String commandKeyword) {
-		return mProcessors.get(commandKeyword);
+		return processors.get(commandKeyword);
 	}
 	
-	private CommandState getClientSessionState() {
-		// TODO: check references
-		CommandState state = new CommandState();
-		state.setUser(mUser);
-		state.setSessionState(mState);
-		state.setCloseConnection(mCloseConnection);
-		//state.setCommand(command);
+	private ClientSessionState getClientSessionState() {
+		ClientSessionState state = new ClientSessionState();
+
+		state.setUser(user);
+		state.setSessionState(sessionState);
+		state.setCloseConnection(closeConnection);
+		
 		return state;
 	}
 	
-	private void applyCommandChanges(CommandState sessionState) {
-		mState = sessionState.getSessionState();
-		mUser = sessionState.getUser();
-		mCloseConnection = sessionState.isCloseConnection();
+	private void applyCommandChanges(ClientSessionState state) {
+		sessionState = state.getSessionState();
+		user = state.getUser();
+		closeConnection = state.isCloseConnection();
 	}
 }

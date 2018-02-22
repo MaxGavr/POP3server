@@ -16,7 +16,7 @@ public class USERCommandProcessor implements ICommandProcessor {
 	
 
 	@Override
-	public POP3Response process(CommandState state) {
+	public POP3Response process(ClientSessionState state) {
 		if (state.getSessionState() != SessionState.AUTHORIZATION) {
 			return new POP3Response(false, "USER command can only be used in AUTHORIZATION state");
 		}
