@@ -8,55 +8,48 @@ import pop3.SessionState;
 
 
 
-public class RETRCommandProcessor extends CommandProcessor {
+public class RETRCommandProcessor implements ICommandProcessor {
 
+	private Server server;
+
+	
 	public RETRCommandProcessor(Server server) {
-		super("RETR", server);
+		this.server = server;
 	}
 
 	
 	@Override
-	public void process(String command, ClientSessionState session) {
-		mSession = session;
+	public POP3Response process(CommandState state) {
 
-		if (mSession.mState != SessionState.TRANSACTION) {
-			mResponse.setResponse(false, "RETR command can only be used in TRANSACTION state");
-			return;
+		if (state.getSessionState() != SessionState.TRANSACTION) {
+			return new POP3Response(false, "RETR command can only be used in TRANSACTION state");
 		}
 
-		String commandArgs[] = CommandParser.getCommandArgs(command);
+		String commandArgs[] = CommandParser.getCommandArgs(state.getCommand());
 		if (commandArgs.length == 0) {
-			mResponse.setResponse(false, "no message is specified");
-			return;
+			return new POP3Response(false, "no message is specified");
 		} else if (commandArgs.length > 1) {
-			mResponse.setResponse(false, "too much arguments");
-			return;
+			return new POP3Response(false, "too much arguments");
 		} else {
 			int msgIndex = 0;
 			try {
 				msgIndex = Integer.parseInt(commandArgs[0]);
 			} catch (NumberFormatException e) {
-				mResponse.setResponse(false, "invalid message index");
-				return;
+				return new POP3Response(false, "invalid message index");
 			}
 
-			Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
+			Maildrop mail = server.getUserMaildrop(state.getUser());
 			
 			if (!mail.isValidIndex(msgIndex)) {
-				mResponse.setResponse(false, "no such message");
-				return;
+				return new POP3Response(false, "no such message");
 			}
 			
 			if (mail.isMessageMarked(msgIndex)) {
-				mResponse.setResponse(false, "message is marked for deletion");
-				return;
+				return new POP3Response(false, "message is marked for deletion");
 			}
 
 			String msg = mail.getMessage(msgIndex);
-			
-			mResponse.clearArgs();
-			mResponse.setPositive(true);
-			mResponse.setArgs(splitMessageIntoLines(msg));
+			return new POP3Response(true, splitMessageIntoLines(msg));
 		}
 
 	}

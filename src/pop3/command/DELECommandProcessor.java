@@ -4,53 +4,50 @@ import pop3.Maildrop;
 import pop3.Server;
 import pop3.SessionState;
 
-public class DELECommandProcessor extends CommandProcessor {
+public class DELECommandProcessor implements ICommandProcessor {
 
+	private Server server;
+
+	
 	public DELECommandProcessor(Server server) {
-		super("DELE", server);
+		this.server = server;
 	}
 
+	
 	@Override
-	public void process(String command, ClientSessionState session) {
-		mSession = session;
-		
-		if (mSession.mState != SessionState.TRANSACTION) {
-			mResponse.setResponse(false, "DELE command can only be used in TRANSACTION state");
-			return;
+	public POP3Response process(CommandState state) {
+	
+		if (state.getSessionState() != SessionState.TRANSACTION) {
+			return new POP3Response(false, "DELE command can only be used in TRANSACTION state");
 		}
 		
-		String[] commandArgs = CommandParser.getCommandArgs(command);
+		String[] commandArgs = CommandParser.getCommandArgs(state.getCommand());
 		if (commandArgs.length == 0) {
-			mResponse.setResponse(false, "message index is not specified");
-			return;
+			return new POP3Response(false, "message index is not specified");
 		} else if (commandArgs.length > 1) {
-			mResponse.setResponse(false, "too much arguments");
-			return;
+			return new POP3Response(false, "too much arguments");
 		}
 		
 		int msgIndex = 0;
 		try {
 			msgIndex = Integer.parseInt(String.join("", commandArgs));
 		} catch (NumberFormatException e) {
-			mResponse.setResponse(false, "invalid message index");
-			return;
+			return new POP3Response(false, "invalid message index");
 		}
 		
-		Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
+		Maildrop mail = server.getUserMaildrop(state.getUser());
 		
 		if (!mail.isValidIndex(msgIndex)) {
-			mResponse.setResponse(false, "no such message");
-			return;
+			return new POP3Response(false, "no such message");
 		}
 		
 		if (mail.isMessageMarked(msgIndex)) {
-			mResponse.setResponse(false, "message is already marked for deletion");
-			return;
+			return new POP3Response(false, "message is already marked for deletion");
 		}
 		
 		// success
 		mail.markMessageToDelete(msgIndex);
-		mResponse.setResponse(true, "message marked for deletion");
+		return new POP3Response(true, "message marked for deletion");
 	}
 
 }

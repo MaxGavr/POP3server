@@ -5,14 +5,15 @@ import java.net.*;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-
+import java.util.HashMap;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 import pop3.command.POP3Response;
 import pop3.command.CommandParser;
-import pop3.command.CommandProcessor;
-import pop3.command.CommandProcessor.ClientSessionState;
+import pop3.command.CommandState;
+import pop3.command.ICommandProcessor;
 
 
 
@@ -29,10 +30,14 @@ public class ClientHandler implements Runnable {
 
 	private Server mServer;
 	
+	private Map<String, ICommandProcessor> mProcessors;
+	
 	
 	ClientHandler(Socket clientSocket, Server server) {
 		mSocket = clientSocket;
 		mServer = server;
+		
+		mProcessors = new HashMap<String, ICommandProcessor>();
 	}
 	
 	
@@ -96,16 +101,18 @@ public class ClientHandler implements Runnable {
 		if (!CommandParser.validate(command)) {
 			sendResponse(CommandParser.getInvalidResponse());
 			
-		} else if (!mServer.isCommandAvailable(CommandParser.getCommandKeyword(command))) {
+		} else if (!isCommandAvailable(CommandParser.getCommandKeyword(command))) {
 			sendResponse(new POP3Response(false, "command is not implemented"));
 			
 		} else {
-			CommandProcessor processor = getCommandProcessor(CommandParser.getCommandKeyword(command));
+			ICommandProcessor processor = getCommandProcessor(CommandParser.getCommandKeyword(command));
+			CommandState state = getClientSessionState();
+			state.setCommand(command);
 			
-			processor.process(command, getClientSessionState());
-			applyCommandChanges(processor.getClientSessionState());
-
-			sendResponse(processor.getResponse());
+			POP3Response response = processor.process(state);
+			
+			applyCommandChanges(state);
+			sendResponse(response);
 		}
 	}
 
@@ -133,18 +140,33 @@ public class ClientHandler implements Runnable {
 		return mSocket.getInetAddress().getHostAddress() + ":" + mSocket.getPort();
 	}
 	
-	private CommandProcessor getCommandProcessor(String commandKeyword) {
-		return mServer.mProcessors.get(commandKeyword);
+	public boolean isCommandAvailable(String command) {
+		return mProcessors.containsKey(command);
 	}
 	
-	private ClientSessionState getClientSessionState() {
+	public void registerCommand(String command, ICommandProcessor processor) {
+		mProcessors.put(command, processor);
+		//serverMessage("Register command " + command);
+	}
+	
+	
+	private ICommandProcessor getCommandProcessor(String commandKeyword) {
+		return mProcessors.get(commandKeyword);
+	}
+	
+	private CommandState getClientSessionState() {
 		// TODO: check references
-		return new CommandProcessor.ClientSessionState(mUser, mState, mCloseConnection);
+		CommandState state = new CommandState();
+		state.setUser(mUser);
+		state.setSessionState(mState);
+		state.setCloseConnection(mCloseConnection);
+		//state.setCommand(command);
+		return state;
 	}
 	
-	private void applyCommandChanges(CommandProcessor.ClientSessionState sessionState) {
-		mState = sessionState.mState;
-		mUser = sessionState.mUser;
-		mCloseConnection = sessionState.mCloseConnection;
+	private void applyCommandChanges(CommandState sessionState) {
+		mState = sessionState.getSessionState();
+		mUser = sessionState.getUser();
+		mCloseConnection = sessionState.isCloseConnection();
 	}
 }

@@ -4,24 +4,28 @@ import pop3.Maildrop;
 import pop3.Server;
 import pop3.SessionState;
 
-public class STATCommandProcessor extends CommandProcessor {
 
+
+public class STATCommandProcessor implements ICommandProcessor {
+
+	private Server server;
+
+	
 	public STATCommandProcessor(Server server) {
-		super("STAT", server);
+		this.server = server;
 	}
 
+	
 	@Override
-	public void process(String command, ClientSessionState session) {
-		mSession = session;
+	public POP3Response process(CommandState state) {
 
-		if (mSession.mState != SessionState.TRANSACTION) {
-			mResponse.setResponse(false, "STAT command can only be used in TRANSACTION state");
-			return;
+		if (state.getSessionState() != SessionState.TRANSACTION) {
+			return new POP3Response(false, "STAT command can only be used in TRANSACTION state");
 		}
 		
 		// success
-		Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
-		mResponse.setResponse(true, mail.getMessageCount() + " " + mail.getMailSize());
+		Maildrop mail = server.getUserMaildrop(state.getUser());
+		return new POP3Response(true, mail.getMessageCount() + " " + mail.getMailSize());
 	}
 
 }

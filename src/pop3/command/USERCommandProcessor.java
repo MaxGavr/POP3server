@@ -5,37 +5,35 @@ import pop3.SessionState;
 
 
 
-public class USERCommandProcessor extends CommandProcessor {
+public class USERCommandProcessor implements ICommandProcessor {
 
-	public USERCommandProcessor(Server server) {
-		super("USER", server);
-	}
-
+	private Server server;
 	
-	@Override
-	public void process(String command, ClientSessionState session) {
-		mSession = session;
+	
+	public USERCommandProcessor(Server server) {
+		this.server = server;
+	}
+	
 
-		if (mSession.mState != SessionState.AUTHORIZATION) {
-			mResponse.setResponse(false, "USER command can only be used in AUTHORIZATION state");
-			return;
+	@Override
+	public POP3Response process(CommandState state) {
+		if (state.getSessionState() != SessionState.AUTHORIZATION) {
+			return new POP3Response(false, "USER command can only be used in AUTHORIZATION state");
 		}
 		
-		String commandArgs[] = CommandParser.getCommandArgs(command);
+		String commandArgs[] = CommandParser.getCommandArgs(state.getCommand());
 		String user = String.join("", commandArgs);
 	
-		if (!mServer.hasUser(user)) {
-			mResponse.setResponse(false, "user " + user + " is not registered");
-			return;
+		if (!server.hasUser(user)) {
+			return new POP3Response(false, "user " + user + " is not registered");
 		}
 		
-		if (mServer.getUserMaildrop(user).isLocked()) {
-			mResponse.setResponse(false, "user " + user + " already signed in");
-			return;
+		if (server.getUserMaildrop(user).isLocked()) {
+			return new POP3Response(false, "user " + user + " already signed in");
 		}
 		
 		// success
-		mSession.mUser = user;
-		mResponse.setResponse(true, "user " + user + " found");
+		state.setUser(user);
+		return new POP3Response(true, "user " + user + " found");
 	}
 }

@@ -4,27 +4,31 @@ import pop3.Maildrop;
 import pop3.Server;
 import pop3.SessionState;
 
-public class RSETCommandProcessor extends CommandProcessor {
 
+
+public class RSETCommandProcessor implements ICommandProcessor {
+
+	private Server server;
+
+	
 	public RSETCommandProcessor(Server server) {
-		super("RSET", server);
+		this.server = server;
 	}
 
+	
 	@Override
-	public void process(String command, ClientSessionState session) {
-		mSession = session;
+	public POP3Response process(CommandState state) {
 		
-		if (mSession.mState != SessionState.TRANSACTION) {
-			mResponse.setResponse(false, "RSET commmand can only be used in TRANSACTION state");
-			return;
+		if (state.getSessionState() != SessionState.TRANSACTION) {
+			return new POP3Response(false, "RSET commmand can only be used in TRANSACTION state");
 		}
 		
-		Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
+		Maildrop mail = server.getUserMaildrop(state.getUser());
 		
 		for (Integer msgIndex : mail.getMarkedMessages()) {
 			mail.unmarkMessageToDelete(msgIndex);
 		}
 		
-		mResponse.setResponse(true, "all messages saved");
+		return new POP3Response(true, "all messages saved");
 	}
 }

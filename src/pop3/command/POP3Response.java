@@ -31,6 +31,12 @@ public class POP3Response {
 		mArgs = new ArrayList<String>();
 	}
 	
+	public POP3Response(boolean isPositive) {
+		mIsPositive = isPositive;
+		mIsMultiline = false;
+		mArgs = new ArrayList<String>();
+	}
+	
 	public POP3Response(boolean isPositive, String arg) {
 		mIsPositive = isPositive;
 		mIsMultiline = false;

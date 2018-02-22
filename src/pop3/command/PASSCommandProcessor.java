@@ -1,55 +1,51 @@
 package pop3.command;
 
-import pop3.Server;
 import pop3.SessionState;
 import pop3.Maildrop;
+import pop3.Server;
 
 
-public class PASSCommandProcessor extends CommandProcessor {
+public class PASSCommandProcessor implements ICommandProcessor {
 
+	private Server server;
+
+	
 	public PASSCommandProcessor(Server server) {
-		super("PASS", server);
+		this.server = server;
 	}
+	
 
 	@Override
-	public void process(String command, ClientSessionState session) {
-		mSession = session;
+	public POP3Response process(CommandState state) {
 		
-		if (mSession.mState != SessionState.AUTHORIZATION) {
-			mResponse.setResponse(false, "PASS command can only be used in AUTHORIZATION state");
-			return;
+		if (state.getSessionState() != SessionState.AUTHORIZATION) {
+			return new POP3Response(false, "PASS command can only be used in AUTHORIZATION state");
 		}
 		
-		if (!mServer.hasUser(mSession.mUser)) {
-			mResponse.setResponse(false, "login first");
-			return;
+		if (!server.hasUser(state.getUser())) {
+			return new POP3Response(false, "login first");
 		}
 		
-		String password = String.join("", CommandParser.getCommandArgs(command));
+		String password = String.join("", CommandParser.getCommandArgs(state.getCommand()));
 		if (password.isEmpty()) {
-			mResponse.setResponse(false, "specify password");
-			return;
+			return new POP3Response(false, "specify password");
 		}
 		
-		String actualPassword = mServer.getUserPassword(mSession.mUser);
+		String actualPassword = server.getUserPassword(state.getUser());
 		if (!actualPassword.equals(password)) {
-			mResponse.setResponse(false, "invalid password for user " + mSession.mUser);
-			return;
+			return new POP3Response(false, "invalid password for user " + state.getUser());
 		}
 		
-		Maildrop userMaildrop = mServer.getUserMaildrop(mSession.mUser);
+		Maildrop userMaildrop = server.getUserMaildrop(state.getUser());
 		if (userMaildrop == null) {
-			mResponse.setResponse(false, "maildrop for user " + mSession.mUser + " not found");
-			return;
+			return new POP3Response(false, "maildrop for user " + state.getUser() + " not found");
 		} else if (userMaildrop.isLocked()) {
-			mResponse.setResponse(false, "maildrop is already locked");
-			return;
+			return new POP3Response(false, "maildrop is already locked");
 		}
 		
 		// success
 		userMaildrop.lock();
-		mSession.mState = SessionState.TRANSACTION;
-		mResponse.setResponse(true, "maildrop for user " + mSession.mUser + " successfully locked");
+		state.setSessionState(SessionState.TRANSACTION);
+		return new POP3Response(true, "maildrop for user " + state.getUser() + " successfully locked");
 	}
-
 }

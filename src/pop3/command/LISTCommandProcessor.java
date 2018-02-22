@@ -4,51 +4,58 @@ import pop3.Maildrop;
 import pop3.Server;
 import pop3.SessionState;
 
-public class LISTCommandProcessor extends CommandProcessor {
 
+
+public class LISTCommandProcessor implements ICommandProcessor {
+
+	private Server server;
+
+	
 	public LISTCommandProcessor(Server server) {
-		super("LIST", server);
+		this.server = server;
 	}
 
+	
 	@Override
-	public void process(String command, ClientSessionState session) {
-		mSession = session;
+	public POP3Response process(CommandState state) {
+		POP3Response response = new POP3Response();
 		
-		if (mSession.mState != SessionState.TRANSACTION) {
-			mResponse.setResponse(false, "LIST command can only be used in TRANSACTION state");
-			return;
+		if (state.getSessionState() != SessionState.TRANSACTION) {
+			response.setResponse(false, "LIST command can only be used in TRANSACTION state");
+			return response;
 		}
 		
-		Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
+		Maildrop mail = server.getUserMaildrop(state.getUser());
 		
-		String[] commandArgs = CommandParser.getCommandArgs(command);
+		String[] commandArgs = CommandParser.getCommandArgs(state.getCommand());
 		if (commandArgs.length > 1){ 
-			mResponse.setResponse(false, "too much arguments");
+			response.setResponse(false, "too much arguments");
 		} else if (commandArgs.length == 1) {
 			
 			int msgIndex = 0;
 			try {
 				msgIndex = Integer.parseInt(String.join("", commandArgs));
 			} catch (NumberFormatException e) {
-				mResponse.setResponse(false, "invalid message index");
-				return;
+				response.setResponse(false, "invalid message index");
+				return response;
 			}
 			
 			if (!mail.isValidIndex(msgIndex)) {
-				mResponse.setResponse(false, "no such message");
+				response.setResponse(false, "no such message");
 			} else if (mail.isMessageMarked(msgIndex)) {
-				mResponse.setResponse(false, "message is marked for deletion");
+				response.setResponse(false, "message is marked for deletion");
 			} else {
-				mResponse.setResponse(true, msgIndex + " " + mail.getMessageSize(msgIndex));
+				response.setResponse(true, msgIndex + " " + mail.getMessageSize(msgIndex));
 			}
 
 		} else {
-			mResponse.clearArgs();
-			mResponse.setPositive(true);
+			response.clearArgs();
+			response.setPositive(true);
 			for (int msgIndex = 0; msgIndex < mail.getMessageCount(); ++msgIndex) {
-				mResponse.addArg((msgIndex + 1) + " " + mail.getMessageSize(msgIndex + 1));
+				response.addArg((msgIndex + 1) + " " + mail.getMessageSize(msgIndex + 1));
 			}
 		}
+		
+		return response;
 	}
-
 }

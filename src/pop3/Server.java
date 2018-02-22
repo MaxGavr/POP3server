@@ -2,6 +2,7 @@ package pop3;
 
 import java.net.*;
 
+import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
@@ -12,7 +13,7 @@ import java.io.InputStreamReader;
 
 import pop3.ClientHandler;
 import pop3.Maildrop;
-import pop3.command.CommandProcessor;
+import pop3.command.*;
 
 
 
@@ -26,15 +27,12 @@ public class Server {
 	private volatile HashMap<String, Maildrop> mUserMaildrop;
 	private volatile HashMap<String, String> mUserPassword;
 	
-	volatile HashMap<String, CommandProcessor> mProcessors;
-	
 	private ExecutorService mExecutor;
 	
 	private BufferedReader mConsoleInput;
 	
 	
 	public Server() {
-		mProcessors = new HashMap<String, CommandProcessor>();
 		loadUsers();
 	}
 	
@@ -49,7 +47,7 @@ public class Server {
 			mConsoleInput = new BufferedReader(new InputStreamReader(System.in));
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			e.printStackTrace();	
 		}
 		
 		acceptNewClients();
@@ -92,10 +90,27 @@ public class Server {
 				continue;
 			}
 			
-			ClientHandler client = new ClientHandler(clientSocket, this);
-			serverMessage("Accept client " + client.getClientAddress());
-			mExecutor.execute(client);
+			mExecutor.execute(createClientHandler(clientSocket));
 		}
+	}
+	
+	private ClientHandler createClientHandler(Socket clientSocket) {
+		ClientHandler client = new ClientHandler(clientSocket, this);
+		serverMessage("Accept client " + client.getClientAddress());
+		
+		client.registerCommand("USER", new USERCommandProcessor(this));
+		client.registerCommand("PASS", new PASSCommandProcessor(this));
+		client.registerCommand("QUIT", new QUITCommandProcessor(this));
+		client.registerCommand("STAT", new STATCommandProcessor(this));
+		client.registerCommand("LIST", new LISTCommandProcessor(this));
+		client.registerCommand("RETR", new RETRCommandProcessor(this));
+		client.registerCommand("DELE", new DELECommandProcessor(this));
+		client.registerCommand("NOOP", new NOOPCommandProcessor());
+		client.registerCommand("RSET", new RSETCommandProcessor(this));
+
+		client.registerCommand("UIDL", new UIDLCommandProcessor(this));
+		
+		return client;
 	}
 	
 	private String getConsoleInput() {
@@ -126,15 +141,6 @@ public class Server {
 	
 	synchronized void serverMessage(String msg) {
 		System.out.println(msg);
-	}
-	
-	public boolean isCommandAvailable(String command) {
-		return mProcessors.containsKey(command);
-	}
-	
-	public void registerCommand(String command, CommandProcessor processor) {
-		mProcessors.put(command, processor);
-		serverMessage("Register command " + command);
 	}
 	
 	public int getTimeout() {

@@ -1,25 +1,17 @@
 package pop3.command;
 
-import pop3.Server;
 import pop3.SessionState;
 
-public class NOOPCommandProcessor extends CommandProcessor {
-
-	public NOOPCommandProcessor(Server server) {
-		super("NOOP", server);
-	}
-
+public class NOOPCommandProcessor implements ICommandProcessor {
+	
 	@Override
-	public void process(String command, ClientSessionState session) {
-		mSession = session;
+	public POP3Response process(CommandState state) {
 		
-		if (mSession.mState != SessionState.TRANSACTION) {
-			mResponse.setResponse(false, "NOOP command can only be used in TRANSACTION state");
-			return;
+		if (state.getSessionState() != SessionState.TRANSACTION) {
+			return new POP3Response(false, "NOOP command can only be used in TRANSACTION state");
 		}
 		
-		mResponse.clearArgs();
-		mResponse.setPositive(true);
+		return new POP3Response(true);
 	}
 
 }

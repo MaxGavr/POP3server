@@ -1,60 +1,62 @@
 package pop3.command;
 
+
 import pop3.Maildrop;
 import pop3.Server;
 import pop3.SessionState;
 
-public class UIDLCommandProcessor extends CommandProcessor {
 
+public class UIDLCommandProcessor implements ICommandProcessor {
+
+	private Server server;
+
+	
 	public UIDLCommandProcessor(Server server) {
-		super("UIDL", server);
+		this.server = server;
 	}
 
+	
 	@Override
-	public void process(String command, ClientSessionState session) {
-		mSession = session;
+	public POP3Response process(CommandState state) {
 		
-		if (mSession.mState != SessionState.TRANSACTION) {
-			mResponse.setResponse(false, "UIDL command can only be used in TRANSACTION state");
-			return;
+		if (state.getSessionState() != SessionState.TRANSACTION) {
+			return new POP3Response(false, "UIDL command can only be used in TRANSACTION state");
 		}
 		
-		String[] commandArgs = CommandParser.getCommandArgs(command);
-		Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
+		String[] commandArgs = CommandParser.getCommandArgs(state.getCommand());
+		Maildrop mail = server.getUserMaildrop(state.getUser());
 		
 		if (commandArgs.length > 1) {
-			mResponse.setResponse(false, "too much arguments");
-			return;
+			return new POP3Response(false, "too much arguments");
 		} else if (commandArgs.length == 1) {
 			int msgIndex = 0;
 
 			try {
 				msgIndex = Integer.parseInt(commandArgs[0]);	
 			} catch (NumberFormatException e) {
-				mResponse.setResponse(false, "invalid message index");
-				return;
+				return new POP3Response(false, "invalid message index");
 			}
 			
 			if (!mail.isValidIndex(msgIndex)) {
-				mResponse.setResponse(false, "no such message");
-				return;
+				return new POP3Response(false, "no such message");
 			}
 			
 			if (mail.isMessageMarked(msgIndex)) {
-				mResponse.setResponse(false, "message marked for deletion");
-				return;
+				return new POP3Response(false, "message marked for deletion");
 			}
 			
 			// success
-			mResponse.setResponse(true, msgIndex + " " + mail.getMessage(msgIndex).hashCode());
+			return new POP3Response(true, msgIndex + " " + mail.getMessage(msgIndex).hashCode());
 			
 		} else {
 			// success
-			mResponse.clearArgs();
-			mResponse.setPositive(true);
+			POP3Response response = new POP3Response(true);
+			
 			for (int msgIndex = 1; msgIndex <= mail.getMessageCount(); ++msgIndex) {
-				mResponse.addArg(msgIndex + " " + mail.getMessage(msgIndex).hashCode());
+				response.addArg(msgIndex + " " + mail.getMessage(msgIndex).hashCode());
 			}
+			
+			return response;
 		}
 	}
 

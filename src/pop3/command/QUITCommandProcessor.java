@@ -1,43 +1,49 @@
 package pop3.command;
 
+
 import pop3.Maildrop;
 import pop3.Server;
 import pop3.SessionState;
 
 
 
-public class QUITCommandProcessor extends CommandProcessor {
+public class QUITCommandProcessor implements ICommandProcessor {
 
+	private Server server;
+
+	
 	public QUITCommandProcessor(Server server) {
-		super("QUIT", server);
+		this.server = server;
 	}
+	
 
 	@Override
-	public void process(String command, ClientSessionState session) {
-		mSession = session;
+	public POP3Response process(CommandState state) {
+		POP3Response response = new POP3Response();
 		
-		if (mSession.mState == SessionState.AUTHORIZATION) {
-			if (!mSession.mUser.isEmpty()) {
-				mSession.mUser = "";
+		if (state.getSessionState() == SessionState.AUTHORIZATION) {
+			if (!state.getUser().isEmpty()) {
+				state.setUser("");
 			}
 			
-			mResponse.setResponse(true, "POP3 server signing off");
+			response.setResponse(true, "POP3 server signing off");
 			
-		} else if (mSession.mState == SessionState.TRANSACTION) {
-			mSession.mState = SessionState.UPDATE;
+		} else if (state.getSessionState() == SessionState.TRANSACTION) {
+			state.setSessionState(SessionState.UPDATE);
 			
-			Maildrop mail = mServer.getUserMaildrop(mSession.mUser);
+			Maildrop mail = server.getUserMaildrop(state.getUser());
 			if (mail.deleteMarkedMessages()) {
-				mResponse.setResponse(true, "POP3 server signing off (" + mail.getMailSize() + " messages left)");
+				response.setResponse(true, "POP3 server signing off (" + mail.getMailSize() + " messages left)");
 			} else {
-				mResponse.setResponse(false, "fail to delete some messages");
+				response.setResponse(false, "fail to delete some messages");
 			}
 			
-			mSession.mUser = "";
+			state.setUser("");
 			mail.unlock();
 		}
 		
-		mSession.mCloseConnection = true;
+		state.setCloseConnection(true);
+		return response;
 	}
 
 }
