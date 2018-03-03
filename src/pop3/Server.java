@@ -2,13 +2,19 @@ package pop3;
 
 import java.net.*;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 
 import java.io.IOException;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 
 import pop3.ClientHandler;
@@ -27,16 +33,20 @@ public class Server {
 	private volatile Map<String, Maildrop> userMaildrop;
 	private volatile Map<String, String> userPassword;
 	
+	private String mailFolder = "";
+	
 	private ExecutorService executor;
 	
 	private BufferedReader consoleInput;
 	
 	
 	public Server() {
-		loadUsers();
+		userMaildrop = new HashMap<String, Maildrop>();
+		userPassword = new HashMap<String, String>();
 	}
-	
-	public void start(){
+
+
+	public void start() throws IOException {
 		serverMessage("Server started");
 		executor = Executors.newFixedThreadPool(TOTAL_CLIENTS);
 		
@@ -47,7 +57,7 @@ public class Server {
 			consoleInput = new BufferedReader(new InputStreamReader(System.in));
 
 		} catch (IOException e) {
-			e.printStackTrace();	
+			throw new IOException("Failed to set up server socket.");	
 		}
 		
 		acceptNewClients();
@@ -127,19 +137,37 @@ public class Server {
 		return input;
 	}
 	
-	private void loadUsers() {
-		userMaildrop = new HashMap<String, Maildrop>();
-		userMaildrop.put("max", new Maildrop("max.txt"));
-		userMaildrop.put("jack", new Maildrop("jack.txt"));
-		userMaildrop.put("lucy", new Maildrop("lucy.txt"));
+	public void loadUsers(String fileName) throws IOException {
 		
-		userPassword = new HashMap<String, String>();
-		userPassword.put("max", "pass_max");
-		userPassword.put("jack", "pass_jack");
-		userPassword.put("lucy", "pass_lucy");
+		try {
+			List<String> lines = Files.readAllLines(Paths.get(fileName), StandardCharsets.UTF_8);
+			
+			for (String line : lines) {
+				String[] userAndPass = line.split(" ", 2);
+				userPassword.put(userAndPass[0], userAndPass[1]);
+			}
+		} catch (IOException e) {
+			throw new IOException("Failed to load users and passwords from file.");
+		}
 	}
 	
-	synchronized void serverMessage(String msg) {
+	public void loadMail(String folder) {
+		mailFolder = folder;
+		
+		for (String user : userPassword.keySet()) {
+			Maildrop mail = new Maildrop();
+			
+			try {
+				mail.loadFromFile(getUserMailFileName(user));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			userMaildrop.put(user, mail);
+		}
+	}
+	
+	public synchronized void serverMessage(String msg) {
 		System.out.println(msg);
 	}
 	
@@ -161,5 +189,17 @@ public class Server {
 	
 	public synchronized Maildrop getUserMaildrop(String user) {
 		return userMaildrop.get(user);
+	}
+
+	public synchronized String getUserMailFileName(String user) {
+		if (!mailFolder.isEmpty()) {
+			return mailFolder + File.separator + user + ".xml";
+		} else {
+			return user + ".xml";
+		}
+	}
+
+	public String getMailFolder() {
+		return mailFolder;
 	}
 }

@@ -24,8 +24,8 @@ public class ClientHandler implements Runnable {
 	private DataOutputStream socketOutput;
 	private Scanner socketInput;
 	
-	private String user;
-	private SessionState sessionState;
+	private String user = "";
+	private SessionState sessionState = SessionState.AUTHORIZATION;
 	private boolean closeConnection = false;
 
 	private Server server;
@@ -116,7 +116,6 @@ public class ClientHandler implements Runnable {
 		}
 	}
 
-	
 	private void disconnect() {
 		server.serverMessage("Disconnecting client " + getClientAddress());
 		
