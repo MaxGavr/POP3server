@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import java.util.Map;
+import java.util.Observable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +25,7 @@ import pop3.command.*;
 
 
 
-public class Server {
+public class Server extends Observable {
 	
 	private final int POP3_IP_PORT = 110;
 	private final int TOTAL_CLIENTS = 4;
@@ -154,6 +155,9 @@ public class Server {
 	
 	public synchronized void addEvent(ServerEvent event) {
 		events.add(event);
+		
+		setChanged();
+		notifyObservers(event);
 	}
 	
 	public ServerEvent getLastEvent() {
