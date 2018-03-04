@@ -12,6 +12,7 @@ import java.util.Scanner;
 
 import pop3.command.POP3Response;
 import pop3.command.CommandParser;
+import pop3.ServerEvent.EventType;
 import pop3.command.ClientSessionState;
 import pop3.command.ICommandProcessor;
 
@@ -75,7 +76,11 @@ public class ClientHandler implements Runnable {
 			socketOutput.write(response.getString().getBytes(StandardCharsets.US_ASCII));
 			socketOutput.flush();
 			
-			server.serverMessage("Send response to " + getClientAddress() + "\n---\n" + response.getString() + "---");
+			ServerEvent event = new ServerEvent(EventType.RESPONSE_SENT);
+			event.addArg(getClientAddress());
+			event.addArg(response.getString());
+			
+			server.addEvent(event);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -96,7 +101,10 @@ public class ClientHandler implements Runnable {
 			return;
 		}
 		
-		server.serverMessage("Received command \"" + command + "\" from " + getClientAddress());
+		ServerEvent event = new ServerEvent(EventType.COMMAND_RECEIVED);
+		event.addArg(getClientAddress());
+		event.addArg(command);
+		server.addEvent(event);
 		
 		if (!CommandParser.validate(command)) {
 			sendResponse(CommandParser.getInvalidResponse());
@@ -117,7 +125,7 @@ public class ClientHandler implements Runnable {
 	}
 
 	private void disconnect() {
-		server.serverMessage("Disconnecting client " + getClientAddress());
+		server.addEvent(new ServerEvent(EventType.DISCONNECT_CLIENT, getClientAddress()));
 		
 		if (sessionState == SessionState.TRANSACTION) {
 			server.getUserMaildrop(user).unlock();
@@ -145,7 +153,12 @@ public class ClientHandler implements Runnable {
 	
 	public void registerCommand(String command, ICommandProcessor processor) {
 		processors.put(command, processor);
-		server.serverMessage("Register command " + command + " for client " + getClientAddress());
+		
+		ServerEvent event = new ServerEvent(EventType.REGISTER_COMMAND);
+		event.addArg(getClientAddress());
+		event.addArg(command);
+		
+		server.addEvent(event);
 	}
 	
 	

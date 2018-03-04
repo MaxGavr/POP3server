@@ -7,18 +7,19 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executors;
+
 import java.util.concurrent.ExecutorService;
 
 import java.io.IOException;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
 
 import pop3.ClientHandler;
 import pop3.Maildrop;
+import pop3.ServerEvent.EventType;
 import pop3.command.*;
 
 
@@ -37,24 +38,25 @@ public class Server {
 	
 	private ExecutorService executor;
 	
-	private BufferedReader consoleInput;
+	private List<ServerEvent> events; 
 	
 	
 	public Server() {
 		userMaildrop = new HashMap<String, Maildrop>();
 		userPassword = new HashMap<String, String>();
+		
+		events = new ArrayList<ServerEvent>();
 	}
 
 
 	public void start() throws IOException {
-		serverMessage("Server started");
+		addEvent(new ServerEvent(EventType.SERVER_STARTED));
+		
 		executor = Executors.newFixedThreadPool(TOTAL_CLIENTS);
 		
 		try {
 			serverSocket = new ServerSocket(POP3_IP_PORT);
 			serverSocket.setSoTimeout(acceptTimeout);
-			
-			consoleInput = new BufferedReader(new InputStreamReader(System.in));
 
 		} catch (IOException e) {
 			throw new IOException("Failed to set up server socket.");	
@@ -66,8 +68,6 @@ public class Server {
 	}
 	
 	private void shutdown() {
-		serverMessage("Stopping server...");
-		
 		if (!serverSocket.isClosed()) {
 			try {
 				serverSocket.close();
@@ -77,18 +77,11 @@ public class Server {
 		}
 		
 		executor.shutdown();
-		serverMessage("Server stopped");
+		addEvent(new ServerEvent(EventType.SERVER_STOPPED));
 	}
 
 	private void acceptNewClients() {
 		while (!serverSocket.isClosed()) {
-			
-			String input = getConsoleInput();
-			
-			if (input != null && input.equalsIgnoreCase("quit")) {
-				serverMessage("Receive QUIT command from console");
-				return;
-			}
 			
 			Socket clientSocket;
 			try {
@@ -106,7 +99,7 @@ public class Server {
 	
 	private ClientHandler createClientHandler(Socket clientSocket) {
 		ClientHandler client = new ClientHandler(clientSocket, this);
-		serverMessage("Accept client " + client.getClientAddress());
+		addEvent(new ServerEvent(EventType.ACCEPT_CLIENT, client.getClientAddress()));
 		
 		client.registerCommand("USER", new USERCommandProcessor(this));
 		client.registerCommand("PASS", new PASSCommandProcessor(this));
@@ -123,19 +116,6 @@ public class Server {
 		return client;
 	}
 	
-	private String getConsoleInput() {
-		String input = null;
-
-		try {
-			if (consoleInput.ready()) {
-				input = consoleInput.readLine();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		return input;
-	}
 	
 	public void loadUsers(String fileName) throws IOException {
 		
@@ -167,9 +147,19 @@ public class Server {
 		}
 	}
 	
+	
 	public synchronized void serverMessage(String msg) {
 		System.out.println(msg);
 	}
+	
+	public synchronized void addEvent(ServerEvent event) {
+		events.add(event);
+	}
+	
+	public ServerEvent getLastEvent() {
+		return events.get(events.size() - 1);
+	}
+	
 	
 	public int getTimeout() {
 		return acceptTimeout;
@@ -178,6 +168,7 @@ public class Server {
 	public void setTimeout(int timeout) {
 		acceptTimeout = timeout;
 	}
+	
 	
 	public boolean hasUser(String user) {
 		return userMaildrop.get(user) != null;
