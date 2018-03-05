@@ -1,62 +1,92 @@
 package gui;
 
+import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.Observable;
 import java.util.Observer;
 
 import pop3.Server;
 import pop3.ServerEvent;
-import pop3.ServerEvent.EventType;
 
 
 
 public class ServerObserver implements Observer {
 	
-	private AppWindow window;
+	private AppWindow view;
+	private Server server;
 	
 	
 	public ServerObserver(Server server) {
-		server.addObserver(this);
-		window = null;
+		this.server = server;
+		if (server != null) {
+			server.addObserver(this);
+		}
+		
+		view = null;
 	}
 
+	
+	public void startServer() {
+		Thread serverThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					server.loadUsers("users.txt");
+					server.loadMail("mail");
+					server.start();
+				} catch (IOException e) {
+					view.logServerMessage(e.getMessage());
+				}
+			}
+		});
+		
+		serverThread.start();
+	}
 	
 	@Override
 	public void update(Observable server, Object event) {
 		ServerEvent serverEvent = (ServerEvent) event;
+		
+		if (view != null) {
+			view.logServerMessage(getServerEventLog(serverEvent));
+		}
 	}
 
 	public String getServerEventLog(ServerEvent event) {
 		
-		String eventLog = "";
+		DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss");
+		String time = timeFormat.format(event.getTimeStamp());
+		
+		String eventLog = time + ": ";
 		
 		switch (event.getType()) {
 		
 		case SERVER_STARTED:
-			eventLog = "Server started";
+			eventLog += "Server started";
 			break;
 			
 		case SERVER_STOPPED:
-			eventLog = "Server stopped";
+			eventLog += "Server stopped";
 			break;
 			
 		case ACCEPT_CLIENT:
-			eventLog = "Accept client " + event.getArgs().get(0);
+			eventLog += "Accept client " + event.getArgs().get(0);
 			break;
 			
 		case DISCONNECT_CLIENT:
-			eventLog = "Disconnect client " + event.getArgs().get(0);
+			eventLog += "Disconnect client " + event.getArgs().get(0);
 			break;
 			
 		case REGISTER_COMMAND:
-			eventLog = "Register command \"" + event.getArgs().get(0) + "\" for client " + event.getArgs().get(1);
+			eventLog += "Register command \"" + event.getArgs().get(1) + "\" for client " + event.getArgs().get(0);
 			break;
 			
 		case COMMAND_RECEIVED:
-			eventLog = "Received command from " + event.getArgs().get(0) + "\n---\n" + event.getArgs().get(1) + "---";
+			eventLog += "Received command \"" + event.getArgs().get(1) + "\" from " + event.getArgs().get(0);
 			break;
 			
 		case RESPONSE_SENT:
-			eventLog = "Send response to " + event.getArgs().get(0) + "\n---\n" + event.getArgs().get(1) + "---";
+			eventLog += "Send response to " + event.getArgs().get(0) + "\n---\n" + event.getArgs().get(1) + "---";
 			break;
 
 		default:
@@ -67,6 +97,14 @@ public class ServerObserver implements Observer {
 	}
 
 	public void setWindow(AppWindow window) {
-		this.window = window;
+		this.view = window;
+	}
+	
+	public boolean isServerRunning() {
+		return server.isRunning();
+	}
+	
+	public void stopServer() {
+		server.stop();
 	}
 }

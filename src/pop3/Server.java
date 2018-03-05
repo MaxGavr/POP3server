@@ -6,13 +6,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import java.time.LocalDateTime;
+
 import java.util.Map;
 import java.util.Observable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executors;
-
 import java.util.concurrent.ExecutorService;
 
 import java.io.IOException;
@@ -32,15 +33,16 @@ public class Server extends Observable {
 	private int acceptTimeout = 1_000 * 1;
 	
 	private ServerSocket serverSocket;
+	private boolean running = false; 
+
 	private volatile Map<String, Maildrop> userMaildrop;
 	private volatile Map<String, String> userPassword;
-	
 	private String mailFolder = "";
 	
 	private ExecutorService executor;
 	
-	private List<ServerEvent> events; 
-	
+	private List<ServerEvent> events;
+
 	
 	public Server() {
 		userMaildrop = new HashMap<String, Maildrop>();
@@ -51,7 +53,9 @@ public class Server extends Observable {
 
 
 	public void start() throws IOException {
-		addEvent(new ServerEvent(EventType.SERVER_STARTED));
+		addEvent(new ServerEvent(EventType.SERVER_STARTED, getCurrentTime()));
+		
+		running = true;
 		
 		executor = Executors.newFixedThreadPool(TOTAL_CLIENTS);
 		
@@ -77,12 +81,22 @@ public class Server extends Observable {
 			}
 		}
 		
-		executor.shutdown();
-		addEvent(new ServerEvent(EventType.SERVER_STOPPED));
+		executor.shutdownNow();
+		addEvent(new ServerEvent(EventType.SERVER_STOPPED, getCurrentTime()));
 	}
+	
+	
+	public synchronized boolean isRunning() {
+		return running;
+	}
+	
+	public synchronized void stop() {
+		running = false;
+	}
+	
 
 	private void acceptNewClients() {
-		while (!serverSocket.isClosed()) {
+		while (!serverSocket.isClosed() && running) {
 			
 			Socket clientSocket;
 			try {
@@ -100,7 +114,7 @@ public class Server extends Observable {
 	
 	private ClientHandler createClientHandler(Socket clientSocket) {
 		ClientHandler client = new ClientHandler(clientSocket, this);
-		addEvent(new ServerEvent(EventType.ACCEPT_CLIENT, client.getClientAddress()));
+		addEvent(new ServerEvent(EventType.ACCEPT_CLIENT, client.getClientAddress(), getCurrentTime()));
 		
 		client.registerCommand("USER", new USERCommandProcessor(this));
 		client.registerCommand("PASS", new PASSCommandProcessor(this));
@@ -160,21 +174,12 @@ public class Server extends Observable {
 		notifyObservers(event);
 	}
 	
-	public ServerEvent getLastEvent() {
+	public synchronized ServerEvent getLastEvent() {
 		return events.get(events.size() - 1);
 	}
 	
 	
-	public int getTimeout() {
-		return acceptTimeout;
-	}
-
-	public void setTimeout(int timeout) {
-		acceptTimeout = timeout;
-	}
-	
-	
-	public boolean hasUser(String user) {
+	public synchronized boolean hasUser(String user) {
 		return userMaildrop.get(user) != null;
 	}
 	
@@ -196,5 +201,10 @@ public class Server extends Observable {
 
 	public String getMailFolder() {
 		return mailFolder;
+	}
+
+	
+	public synchronized LocalDateTime getCurrentTime() {
+		return LocalDateTime.now();
 	}
 }

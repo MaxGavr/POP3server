@@ -4,6 +4,7 @@ import java.net.*;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +25,7 @@ public class ClientHandler implements Runnable {
 	
 	private DataOutputStream socketOutput;
 	private Scanner socketInput;
+	private InputStream socketInputStream;
 	
 	private String user = "";
 	private SessionState sessionState = SessionState.AUTHORIZATION;
@@ -45,7 +47,8 @@ public class ClientHandler implements Runnable {
 	@Override
 	public void run() {
 		try {
-			socketInput = new Scanner(socket.getInputStream());
+			socketInputStream = socket.getInputStream();
+			socketInput = new Scanner(socketInputStream);
 			socketInput.useDelimiter(CommandParser.getLineEnd());
 
 			socketOutput = new DataOutputStream(socket.getOutputStream());
@@ -59,7 +62,7 @@ public class ClientHandler implements Runnable {
 		sessionState = SessionState.AUTHORIZATION;
 		sendGreeting();
 		
-		while (!socket.isClosed() && !closeConnection) {
+		while (!socket.isClosed() && !closeConnection && !Thread.interrupted()) {
 			receiveCommand();
 		}
 		
@@ -76,7 +79,7 @@ public class ClientHandler implements Runnable {
 			socketOutput.write(response.getString().getBytes(StandardCharsets.US_ASCII));
 			socketOutput.flush();
 			
-			ServerEvent event = new ServerEvent(EventType.RESPONSE_SENT);
+			ServerEvent event = new ServerEvent(EventType.RESPONSE_SENT, server.getCurrentTime());
 			event.addArg(getClientAddress());
 			event.addArg(response.getString());
 			
@@ -90,8 +93,12 @@ public class ClientHandler implements Runnable {
 		String command = null;
 		
 		try {
-			command = socketInput.nextLine();
-		} catch (NoSuchElementException e) {
+			if (socketInputStream.available() > 0) {
+				command = socketInput.nextLine();
+			} else {
+				return;
+			}
+		} catch (NoSuchElementException | IOException e) {
 			e.printStackTrace();
 			return;
 		}
@@ -101,7 +108,7 @@ public class ClientHandler implements Runnable {
 			return;
 		}
 		
-		ServerEvent event = new ServerEvent(EventType.COMMAND_RECEIVED);
+		ServerEvent event = new ServerEvent(EventType.COMMAND_RECEIVED, server.getCurrentTime());
 		event.addArg(getClientAddress());
 		event.addArg(command);
 		server.addEvent(event);
@@ -125,7 +132,7 @@ public class ClientHandler implements Runnable {
 	}
 
 	private void disconnect() {
-		server.addEvent(new ServerEvent(EventType.DISCONNECT_CLIENT, getClientAddress()));
+		server.addEvent(new ServerEvent(EventType.DISCONNECT_CLIENT, getClientAddress(), server.getCurrentTime()));
 		
 		if (sessionState == SessionState.TRANSACTION) {
 			server.getUserMaildrop(user).unlock();
@@ -154,7 +161,7 @@ public class ClientHandler implements Runnable {
 	public void registerCommand(String command, ICommandProcessor processor) {
 		processors.put(command, processor);
 		
-		ServerEvent event = new ServerEvent(EventType.REGISTER_COMMAND);
+		ServerEvent event = new ServerEvent(EventType.REGISTER_COMMAND, server.getCurrentTime());
 		event.addArg(getClientAddress());
 		event.addArg(command);
 		
